@@ -225,7 +225,7 @@ const App: React.FC = () => {
                 A selection of things <br /> worth watching.
               </h1>
               <p className="text-[14px] text-neutral-600 leading-relaxed max-w-md">
-                Your personal directory. From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
+              From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
               </p>
             </div>
             {isAdmin && (
