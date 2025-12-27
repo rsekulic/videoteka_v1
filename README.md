@@ -1,11 +1,23 @@
-<div align="center">
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+# Videoteka 2.0
 
-  <h1>Built with AI Studio</h2>
+A minimalist, high-performance personal directory for curated movies and TV series.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Features
+- **AI-Powered**: Uses Google Gemini to fetch high-quality metadata, scores, and trailers.
+- **Supabase Backend**: Real-time synchronization and secure admin management.
+- **TMDB Integration**: Official high-resolution posters and backdrops.
+- **Responsive Design**: Mobile-first, cinematic UI.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Local Development
+1. Clone the repository.
+2. Install dependencies: `npm install`
+3. Create a `.env` file and add your `API_KEY`.
+4. Run the dev server: `npm run dev`
 
-</div>
+## Deployment
+This project is ready to be deployed to **Vercel** or **Netlify**.
+1. Push this code to a GitHub repository.
+2. Import the project into Vercel/Netlify.
+3. Add your `API_KEY` to the environment variables in the host dashboard.
+4. The build command is `npm run build` and the output directory is `dist`.

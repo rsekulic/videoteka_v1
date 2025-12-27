@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineList</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --token-ced505ee-be70-4fe6-a98d-275943248dda: #f7f7f7;
+            --token-c7b717d5-a6ad-4ec1-bad4-5d528037a252: #d4d4d4;
+            --token-6137585a-4cb4-43b1-987d-abba747deb93: #e3e3e3;
+            --token-331442cb-acd2-453e-a322-b94eb073f51b: #d9d9d9;
+            --token-9740145d-c44f-473f-83c0-6cb89f382d81: #737373;
+            --token-099bca56-28da-4e72-9b46-526ffbc5f282: #a3a3a3;
+            --token-588b5f43-4c4e-4453-a18e-589576c11ac8: #d4d4d4;
+            --token-94d2c577-fd20-4b8a-9301-6f78a98375f0: #f5f5f5;
+            --token-a7ba6192-9476-4ae8-8646-3b1fa9ae8243: #ffffff;
+            --token-e5889e1f-cc64-4cf7-8a96-aaff1398b201: #f7f7f7;
+            --token-d4f337e7-7350-4d92-8866-0d8065e29da2: #171717;
+            --token-de1425f6-1e2b-4cbc-91c6-31deec1d324c: #f7f7f7;
+            --framer-will-change-override: none;
+            --framer-aspect-ratio-supported: auto;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--token-e5889e1f-cc64-4cf7-8a96-aaff1398b201);
+            color: var(--token-d4f337e7-7350-4d92-8866-0d8065e29da2);
+            font-size: 12px;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            padding: 0;
+        }
+
+        rt-img {
+            display: block;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        rt-img[src] {
+            content: url(attr(src));
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--token-e5889e1f-cc64-4cf7-8a96-aaff1398b201);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.45.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
