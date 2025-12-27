@@ -32,8 +32,17 @@ const App: React.FC = () => {
   const [isUsingDemoData, setIsUsingDemoData] = useState(false);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
 
-  // Toast Helper
-  const addToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
+  // Robust Toast Helper
+  const addToast = (msg: any, type: 'success' | 'info' | 'error' = 'success') => {
+    let text = 'An unknown error occurred';
+    
+    if (typeof msg === 'string') {
+      text = msg;
+    } else if (msg && typeof msg === 'object') {
+      // Check for Supabase error format or standard Error object
+      text = msg.message || msg.error_description || JSON.stringify(msg);
+    }
+
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { id, text, type: type === 'error' ? 'info' : type }]);
   };
@@ -71,7 +80,7 @@ const App: React.FC = () => {
       }
       setItems(currentItems);
 
-      // Handle deep linking on initial load
+      // Handle deep linking
       const path = window.location.pathname.slice(1);
       if (path && path !== '') {
         const linkedItem = currentItems.find(i => getSlug(i.title) === path);
@@ -79,8 +88,13 @@ const App: React.FC = () => {
           setSelectedItem(linkedItem);
         }
       }
-    } catch (err) {
-      console.error("Fetch Error:", err);
+    } catch (err: any) {
+      // Table missing fallback
+      if (err?.code === '42P01') {
+        console.warn("Table 'media_items' missing. Falling back to local data.");
+      } else {
+        console.error("Fetch Error:", err?.message || err);
+      }
       setItems(INITIAL_DATA);
       setIsUsingDemoData(true);
     } finally {
@@ -128,10 +142,10 @@ const App: React.FC = () => {
         } else {
           setItems(prev => [data[0], ...prev]);
         }
-        addToast(`${newItem.title} added successfully.`);
+        addToast(`${newItem.title} added to directory.`);
       }
     } catch (err: any) {
-      addToast(err.message || 'Failed to save.', 'error');
+      addToast(err, 'error');
     }
   };
 
@@ -153,7 +167,7 @@ const App: React.FC = () => {
       if (error) throw error;
 
       setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
-      addToast(newFavStatus ? 'Added to favorites.' : 'Removed from favorites.', 'success');
+      addToast(newFavStatus ? 'Added to favorites.' : 'Removed from favorites.');
     } catch (err: any) {
       addToast('Update failed.', 'error');
     }
@@ -162,7 +176,7 @@ const App: React.FC = () => {
   const handleBootstrap = async () => {
     if (!isAdmin) return;
     setIsBootstrapping(true);
-    addToast('Bootstrapping your database...', 'info');
+    addToast('Bootstrapping database...', 'info');
 
     try {
       const itemsToBootstrap = INITIAL_DATA.map(({ id, ...rest }) => rest);
@@ -170,12 +184,17 @@ const App: React.FC = () => {
         .from('media_items')
         .insert(itemsToBootstrap);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          throw new Error("Table 'media_items' does not exist in your project.");
+        }
+        throw error;
+      }
 
-      addToast('Database successfully initialized!', 'success');
+      addToast('Database initialized!', 'success');
       await fetchData();
     } catch (err: any) {
-      addToast(err.message || 'Bootstrap failed.', 'error');
+      addToast(err, 'error');
     } finally {
       setIsBootstrapping(false);
     }
@@ -183,19 +202,19 @@ const App: React.FC = () => {
 
   const handleClearDatabase = async () => {
     if (!isAdmin || isUsingDemoData) return;
-    if (!window.confirm('WARNING: This will delete ALL entries in your database. Proceed?')) return;
+    if (!window.confirm('Delete ALL database entries?')) return;
 
     try {
       const { error } = await supabase
         .from('media_items')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
       if (error) throw error;
 
       setItems(INITIAL_DATA);
       setIsUsingDemoData(true);
-      addToast('Database cleared. Returned to demo mode.', 'info');
+      addToast('Database wiped. Demo mode active.', 'info');
     } catch (err: any) {
       addToast('Clear failed.', 'error');
     }
@@ -205,12 +224,12 @@ const App: React.FC = () => {
     e.stopPropagation();
     if (isUsingDemoData) {
       setItems(prev => prev.filter(item => item.id !== id));
-      addToast('Demo item hidden.', 'info');
+      addToast('Item hidden (Demo).', 'info');
       return;
     }
 
     const item = items.find(i => i.id === id);
-    if (window.confirm(`Remove "${item?.title}" permanently?`)) {
+    if (window.confirm(`Permanently remove "${item?.title}"?`)) {
       try {
         const { error } = await supabase
           .from('media_items')
@@ -218,9 +237,9 @@ const App: React.FC = () => {
           .eq('id', id);
         if (error) throw error;
         setItems(prev => prev.filter(item => item.id !== id));
-        addToast('Item removed.', 'info');
+        addToast('Item deleted.', 'info');
       } catch (err: any) {
-        addToast(err.message || 'Delete failed.', 'error');
+        addToast(err, 'error');
       }
     }
   };
@@ -268,7 +287,7 @@ const App: React.FC = () => {
                 A selection of things <br /> worth watching.
               </h1>
               <p className="text-[14px] text-neutral-600 leading-relaxed max-w-md">
-              From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
+                From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
               </p>
             </div>
             {isAdmin && (
@@ -290,7 +309,7 @@ const App: React.FC = () => {
                 {isUsingDemoData ? (
                   <div className="pt-4 border-t border-black/5">
                     <p className="text-[11px] text-neutral-500 mb-3 leading-snug">
-                      Your database is currently empty. Initialize it with the sample set?
+                      Database is currently empty. Initialize with samples?
                     </p>
                     <button 
                       onClick={handleBootstrap}
@@ -298,27 +317,22 @@ const App: React.FC = () => {
                       className="w-full bg-black text-white py-3 text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all disabled:bg-neutral-200"
                     >
                       {isBootstrapping ? (
-                        <span className="animate-pulse">Writing to Cloud...</span>
+                        <span className="animate-pulse">Initializing Cloud...</span>
                       ) : (
-                        <>
-                          <Sparkles className="w-3 h-3" />
-                          Bootstrap Database
-                        </>
+                        <><Sparkles className="w-3 h-3" /> Bootstrap Database</>
                       )}
                     </button>
                   </div>
                 ) : (
                   <div className="pt-4 border-t border-black/5 flex flex-col gap-3">
                     <p className="text-[11px] text-green-600/60 font-medium flex items-center gap-1.5">
-                      <Cloud className="w-3 h-3" />
-                      Securely connected to Supabase
+                      <Cloud className="w-3 h-3" /> Secure Sync Active
                     </p>
                     <button 
                       onClick={handleClearDatabase}
                       className="text-[10px] font-bold uppercase tracking-widest text-red-500/50 hover:text-red-500 flex items-center gap-2 transition-colors self-start"
                     >
-                      <Trash2 className="w-3 h-3" />
-                      Wipe Database
+                      <Trash2 className="w-3 h-3" /> Wipe Database
                     </button>
                   </div>
                 )}
@@ -370,7 +384,7 @@ const App: React.FC = () => {
         {isInitialLoad ? (
           <div className="py-24 text-center">
             <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-neutral-500 text-[12px] uppercase tracking-widest font-bold">Synchronizing Database...</p>
+            <p className="text-neutral-500 text-[12px] uppercase tracking-widest font-bold tracking-widest">Synchronizing...</p>
           </div>
         ) : filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-4">
@@ -387,12 +401,12 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="py-24 text-center border border-dashed border-black/10">
-            <p className="text-neutral-500 text-[14px]">No matches for your current selection.</p>
+            <p className="text-neutral-500 text-[14px]">No matches found.</p>
             <button 
               onClick={() => { setActiveCategory('All'); setActiveGenre('All'); setSearchQuery(''); }}
               className="mt-4 text-black text-[12px] font-bold hover:underline"
             >
-              Clear all filters
+              Clear filters
             </button>
           </div>
         )}
@@ -424,12 +438,12 @@ const App: React.FC = () => {
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div>
             <div className="text-black font-bold text-lg mb-2 tracking-tight">Videoteka</div>
-            <p className="text-[11px] text-neutral-400 font-medium">© {new Date().getFullYear()} — Curated with passion.</p>
+            <p className="text-[11px] text-neutral-400 font-medium">© {new Date().getFullYear()} — Time for popcorn.</p>
           </div>
           <div className="flex items-center gap-10 text-[12px] font-bold text-neutral-500">
             {isAdmin ? (
               <button onClick={handleLogout} className="text-red-500 hover:text-red-600 transition-colors uppercase tracking-widest text-[10px] font-bold">
-                Exit Management
+                Exit Admin
               </button>
             ) : (
               <button onClick={() => setIsLoginModalOpen(true)} className="hover:text-black transition-colors uppercase tracking-widest text-[10px]">

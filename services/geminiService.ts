@@ -22,12 +22,14 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
     return rtData;
   }
 
+  // Primary search via TMDB for high-res assets
   let tmdbData = await searchTMDB(input, 'movie');
   if (!tmdbData) {
     tmdbData = await searchTMDB(input, 'tv');
   }
   
   if (tmdbData) {
+    // Critical: Overwrite the TMDB 'N/A' defaults with live RT scores
     const scores = await enrichWithScores(tmdbData.title, tmdbData.year);
     return {
       ...tmdbData,
@@ -37,6 +39,7 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
     } as MediaItem;
   }
 
+  // Fallback if TMDB fails completely
   return fetchViaGemini(input);
 }
 
@@ -49,21 +52,29 @@ async function enrichWithScores(title: string, year: string) {
     }
 
     const ai = new GoogleGenAI({ apiKey });
+    
+    // Using Gemini 3 Pro with high thinking budget to ensure it doesn't miss scores in search results
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Search Google for the Rotten Tomatoes page of the production: "${title} (${year})". 
-      Extract the current 'Tomatometer' (critic percentage) and 'Audience Score' (audience percentage).
-      Return ONLY a JSON object with two keys: "tomatoMeter" and "audienceScore". 
-      Example format: {"tomatoMeter": "85%", "audienceScore": "90%"}. 
-      If a score is missing or the page isn't found, use "N/A".`,
+      model: 'gemini-3-pro-preview',
+      contents: `You are a precision data extractor. Your task is to find the Rotten Tomatoes scores for: "${title} (${year})".
+
+      Step-by-Step Instructions:
+      1. Use Google Search to find the official Rotten Tomatoes page for this specific production.
+      2. Locate the "Tomatometer" (Critics Score) and the "Audience Score".
+      3. If you find multiple versions (e.g., a movie and a remake), select the one matching the year ${year}.
+      4. Ensure you capture the percentage symbol (e.g., "94%").
+      5. Return ONLY a JSON object. No preamble. No chat.
+      
+      Example: {"tomatoMeter": "85%", "audienceScore": "90%"}`,
       config: {
+        thinkingConfig: { thinkingBudget: 16000 },
         tools: [{googleSearch: {}}],
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            tomatoMeter: { type: Type.STRING, description: "TomatoMeter score, e.g. 85%" },
-            audienceScore: { type: Type.STRING, description: "Audience score, e.g. 90%" }
+            tomatoMeter: { type: Type.STRING, description: "The critics score, e.g. 88%" },
+            audienceScore: { type: Type.STRING, description: "The audience score, e.g. 92%" }
           },
           required: ['tomatoMeter', 'audienceScore']
         }
@@ -71,14 +82,12 @@ async function enrichWithScores(title: string, year: string) {
     });
 
     const text = response.text;
-    if (typeof text !== 'string' || !text) {
-      return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
-    }
+    if (!text) return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
     
     const result = JSON.parse(text);
     return {
-      tomatoMeter: result.tomatoMeter || 'N/A',
-      audienceScore: result.audienceScore || 'N/A'
+      tomatoMeter: result.tomatoMeter && result.tomatoMeter !== 'N/A' ? result.tomatoMeter : 'N/A',
+      audienceScore: result.audienceScore && result.audienceScore !== 'N/A' ? result.audienceScore : 'N/A'
     };
   } catch (error) {
     console.error("Score Enrichment Error:", error);
@@ -95,11 +104,12 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     const isUrl = input.includes('http');
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Perform a deep search for metadata on: "${input}". 
-      ${isUrl ? 'Extract scores and details directly from this URL.' : 'Search for official Rotten Tomatoes and TMDB data for this title.'}
-      Focus on getting the actual Tomatometer and Audience scores.
-      Return the result as a strict JSON object.`,
+      contents: `Find complete metadata for: "${input}". 
+      ${isUrl ? 'Extract directly from the URL.' : 'Search Google for the most accurate match.'}
+      Focus on finding the REAL Rotten Tomatoes percentages.
+      Return as a JSON object.`,
       config: {
+        thinkingConfig: { thinkingBudget: 15000 },
         tools: [{googleSearch: {}}],
         responseMimeType: "application/json",
         responseSchema: {
@@ -126,7 +136,7 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     });
 
     const text = response.text;
-    if (typeof text !== 'string' || !text) return null;
+    if (!text) return null;
     
     const data = JSON.parse(text);
     return {
