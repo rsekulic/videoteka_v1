@@ -6,10 +6,8 @@ import { searchTMDB } from "./tmdbService";
 export async function fetchMovieDetails(input: string): Promise<Partial<MediaItem> | null> {
   const isUrl = input.includes('rottentomatoes.com');
   
-  // 1. If it's a specific RT URL, use Gemini's crawling capability primarily
   if (isUrl) {
     const rtData = await fetchViaGemini(input);
-    // Even if we have a URL, let's try to get a better poster from TMDB using the title Gemini found
     if (rtData?.title) {
       const tmdbFallback = await searchTMDB(rtData.title, rtData.type === 'TV Series' ? 'tv' : 'movie');
       if (tmdbFallback) {
@@ -24,14 +22,12 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
     return rtData;
   }
 
-  // 2. If it's a search query, prioritize TMDB for high-quality official assets
   let tmdbData = await searchTMDB(input, 'movie');
   if (!tmdbData) {
     tmdbData = await searchTMDB(input, 'tv');
   }
   
   if (tmdbData) {
-    // 3. Enrich TMDB high-res data with Rotten Tomatoes scores using Gemini Search Grounding
     const scores = await enrichWithScores(tmdbData.title, tmdbData.year);
     return {
       ...tmdbData,
@@ -41,7 +37,6 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
     } as MediaItem;
   }
 
-  // 4. Final Fallback: Full Gemini search if TMDB finds nothing
   return fetchViaGemini(input);
 }
 
@@ -68,13 +63,12 @@ async function enrichWithScores(title: string, year: string) {
     });
 
     const text = response.text;
-    // Explicit narrowing for TypeScript's strictNullChecks
-    if (text === undefined || text === null || typeof text !== 'string') {
+    // Strict type narrowing for Vercel's TSC
+    if (typeof text !== 'string' || !text) {
       return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
     }
     
-    // Using explicit cast 'as string' to satisfy JSON.parse requirement after guard
-    return JSON.parse(text as string);
+    return JSON.parse(text);
   } catch (error) {
     console.error("Score Enrichment Error:", error);
     return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
@@ -119,13 +113,12 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     });
 
     const text = response.text;
-    // Explicit narrowing for TypeScript's strictNullChecks
-    if (text === undefined || text === null || typeof text !== 'string') {
+    // Strict type narrowing for Vercel's TSC
+    if (typeof text !== 'string' || !text) {
       return null;
     }
     
-    // Using explicit cast 'as string' to satisfy JSON.parse requirement after guard
-    const data = JSON.parse(text as string);
+    const data = JSON.parse(text);
     return {
       ...data,
       id: Math.random().toString(36).substr(2, 9)
