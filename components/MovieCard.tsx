@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trash2, TrendingUp, Users, Star } from 'lucide-react';
+import { Trash2, Star } from 'lucide-react';
 import { MediaItem } from '../types';
 
 interface MovieCardProps {
@@ -83,17 +83,6 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, onClick, isAdmin, onDelete,
           <span className="text-[11px] font-medium text-neutral-500">
             {item.year}
           </span>
-          <span className="w-1 h-1 rounded-full bg-neutral-300" />
-          <div className="flex items-center gap-3">
-             <div className="flex items-center gap-1">
-               <TrendingUp className="w-3 h-3 text-red-500" />
-               <span className="text-[10px] font-bold text-black/60">{item.tomatoMeter}</span>
-             </div>
-             <div className="flex items-center gap-1">
-               <Users className="w-3 h-3 text-blue-500" />
-               <span className="text-[10px] font-bold text-black/60">{item.audienceScore}</span>
-             </div>
-          </div>
         </div>
       </div>
     </div>

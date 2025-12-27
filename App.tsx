@@ -39,7 +39,8 @@ const App: React.FC = () => {
     if (typeof msg === 'string') {
       text = msg;
     } else if (msg && typeof msg === 'object') {
-      text = msg.message || msg.error_description || JSON.stringify(msg);
+      // Handle Supabase error object specifically
+      text = msg.message || msg.error_description || msg.details || JSON.stringify(msg);
     }
 
     const id = Math.random().toString(36).substr(2, 9);
@@ -126,9 +127,12 @@ const App: React.FC = () => {
   const handleAddItem = async (newItem: MediaItem) => {
     try {
       const { id, ...itemToInsert } = newItem;
+      // Ensure is_favorite has a default value if missing
+      const finalItem = { ...itemToInsert, is_favorite: itemToInsert.is_favorite ?? false };
+      
       const { data, error } = await supabase
         .from('media_items')
-        .insert([itemToInsert])
+        .insert([finalItem])
         .select();
 
       if (error) throw error;
@@ -174,7 +178,18 @@ const App: React.FC = () => {
 
   const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAdmin || isUsingDemoData) return;
+    
+    // Safety check for Demo data - we allow UI toggle but don't hit DB
+    if (isUsingDemoData) {
+      setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: !i.is_favorite } : i));
+      addToast('Demo status toggled locally.', 'info');
+      return;
+    }
+
+    if (!isAdmin) {
+      addToast('Login as admin to modify favorites.', 'info');
+      return;
+    }
 
     const item = items.find(i => i.id === id);
     if (!item) return;
@@ -192,7 +207,8 @@ const App: React.FC = () => {
       setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
       addToast(newFavStatus ? 'Added to favorites.' : 'Removed from favorites.');
     } catch (err: any) {
-      addToast('Update failed.', 'error');
+      // Surface actual Supabase error (e.g., column missing or RLS violation)
+      addToast(err, 'error');
     }
   };
 
@@ -202,7 +218,11 @@ const App: React.FC = () => {
     addToast('Bootstrapping database...', 'info');
 
     try {
-      const itemsToBootstrap = INITIAL_DATA.map(({ id, ...rest }) => rest);
+      const itemsToBootstrap = INITIAL_DATA.map(({ id, ...rest }) => ({
+        ...rest,
+        is_favorite: false // Ensure column exists with default value
+      }));
+
       const { error } = await supabase
         .from('media_items')
         .insert(itemsToBootstrap);
@@ -210,6 +230,9 @@ const App: React.FC = () => {
       if (error) {
         if (error.code === '42P01') {
           throw new Error("Table 'media_items' does not exist in your project.");
+        }
+        if (error.code === '42703') {
+          throw new Error("Column 'is_favorite' is missing in your Supabase table.");
         }
         throw error;
       }
@@ -239,7 +262,7 @@ const App: React.FC = () => {
       setIsUsingDemoData(true);
       addToast('Database wiped. Demo mode active.', 'info');
     } catch (err: any) {
-      addToast('Clear failed.', 'error');
+      addToast(err, 'error');
     }
   };
 

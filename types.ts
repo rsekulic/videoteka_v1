@@ -5,9 +5,6 @@ export interface MediaItem {
   id: string;
   title: string;
   year: string;
-  rating: string;
-  tomatoMeter?: string;
-  audienceScore?: string;
   type: ContentType;
   genre: string[];
   description: string;

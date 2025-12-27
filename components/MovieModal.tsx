@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MediaItem } from '../types';
-import { X, Share2, TrendingUp, Users, Clock, List, Play, Check, RefreshCw, Loader2 } from 'lucide-react';
+import { X, Share2, Clock, List, Play, Check, RefreshCw, Loader2, Star } from 'lucide-react';
 import { fetchMovieDetails } from '../services/geminiService';
 
 interface MovieModalProps {
@@ -67,7 +67,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
     try {
       const freshDetails = await fetchMovieDetails(item.title);
       if (freshDetails) {
-        // Merge the fresh details with current ID and favorite status
         const updated = {
           ...item,
           ...freshDetails,
@@ -132,24 +131,12 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
               {item.type}
             </span>
             
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <TrendingUp className="w-4 h-4 text-red-500" />
-              <span className="text-[10px] uppercase font-bold text-neutral-400">Critics:</span>
-              <span className="text-sm font-bold">{item.tomatoMeter || 'N/A'}</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-[10px] uppercase font-bold text-neutral-400">Audience:</span>
-              <span className="text-sm font-bold">{item.audienceScore || 'N/A'}</span>
-            </div>
-
             {isAdmin && (
                <button 
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 className="flex items-center gap-1.5 text-black hover:text-neutral-500 transition-colors disabled:opacity-30"
-                title="Refresh scores and data"
+                title="Refresh metadata"
                >
                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                  <span className="text-[10px] uppercase font-bold border-b border-black/10">Refresh Data</span>

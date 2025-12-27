@@ -35,7 +35,6 @@ export async function searchTMDB(query: string, type: 'movie' | 'tv' = 'movie') 
     return {
       title: type === 'movie' ? details.title : details.name,
       year: (type === 'movie' ? details.release_date : details.first_air_date)?.split('-')[0] || 'N/A',
-      rating: details.vote_average?.toFixed(1) || 'N/A',
       type: type === 'movie' ? 'Movie' : 'TV Series',
       genre: details.genres?.map((g: any) => g.name) || [],
       description: details.overview,
@@ -46,9 +45,7 @@ export async function searchTMDB(query: string, type: 'movie' | 'tv' = 'movie') 
       director: details.credits?.crew?.find((c: any) => c.job === 'Director')?.name || 
                 details.credits?.crew?.find((c: any) => c.job === 'Executive Producer')?.name || 'Unknown',
       cast: details.credits?.cast?.slice(0, 5).map((c: any) => c.name) || [],
-      trailerUrl,
-      tomatoMeter: 'N/A', 
-      audienceScore: 'N/A'
+      trailerUrl
     };
   } catch (error) {
     console.error("TMDB API Error:", error);
