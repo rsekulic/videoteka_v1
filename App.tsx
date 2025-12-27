@@ -122,7 +122,7 @@ const App: React.FC = () => {
 
     const newFavStatus = !item.is_favorite;
 
-    // 1. Optimistic Update
+    // 1. Optimistic Update (UI feels fast)
     setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
     
     if (selectedItem?.id === id) {
@@ -130,6 +130,7 @@ const App: React.FC = () => {
     }
 
     // 2. Cloud Sync logic
+    // We only attempt sync if it's a valid UUID (meaning it's in Supabase)
     if (isUsingDemoData || !isUUID(id)) {
       addToast(newFavStatus ? 'Added to local favorites' : 'Removed from local favorites', 'info');
       return;
@@ -139,6 +140,9 @@ const App: React.FC = () => {
       addToast('Admin login required to sync with cloud.', 'info');
       // Revert if not admin but trying to sync
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
+      if (selectedItem?.id === id) {
+        setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
+      }
       return;
     }
 
@@ -151,7 +155,7 @@ const App: React.FC = () => {
       if (error) throw error;
       addToast(newFavStatus ? 'Synced to cloud' : 'Removed from cloud');
     } catch (err: any) {
-      // Revert state on failure
+      // Revert state on actual API failure
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
       if (selectedItem?.id === id) {
         setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
@@ -212,7 +216,16 @@ const App: React.FC = () => {
   const filteredItems = useMemo(() => {
     const filtered = items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGenre = activeGenre === 'All' || item.genre.includes(activeGenre);
+      
+      // Fix for Sci-Fi including Science Fiction tags
+      let matchesGenre = activeGenre === 'All';
+      if (!matchesGenre) {
+        if (activeGenre === 'Sci-Fi') {
+          matchesGenre = item.genre.includes('Sci-Fi') || item.genre.includes('Science Fiction');
+        } else {
+          matchesGenre = item.genre.includes(activeGenre);
+        }
+      }
       
       let matchesCategory = true;
       if (activeCategory === 'Movies') matchesCategory = item.type === 'Movie';
