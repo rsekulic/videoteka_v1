@@ -48,7 +48,8 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
 
 async function enrichWithScores(title: string, year: string) {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY || '';
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find the exact Rotten Tomatoes TomatoMeter and Audience Score for the production: "${title} (${year})". 
@@ -68,7 +69,9 @@ async function enrichWithScores(title: string, year: string) {
     });
 
     const text = response.text;
-    if (!text) return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
+    if (typeof text !== 'string') {
+      return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
+    }
     return JSON.parse(text);
   } catch (error) {
     console.error("Score Enrichment Error:", error);
@@ -78,7 +81,8 @@ async function enrichWithScores(title: string, year: string) {
 
 async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null> {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY || '';
+    const ai = new GoogleGenAI({ apiKey });
     const isUrl = input.includes('http');
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -113,7 +117,9 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     });
 
     const text = response.text;
-    if (!text) return null;
+    if (typeof text !== 'string') {
+      return null;
+    }
     
     const data = JSON.parse(text);
     return {
