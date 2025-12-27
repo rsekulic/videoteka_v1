@@ -43,19 +43,27 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
 async function enrichWithScores(title: string, year: string) {
   try {
     const apiKey = process.env.API_KEY || '';
+    if (!apiKey) {
+      console.warn("API Key missing, skipping score enrichment.");
+      return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
+    }
+
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the exact Rotten Tomatoes TomatoMeter and Audience Score for the production: "${title} (${year})". 
-      Return only the percentages in a JSON object.`,
+      contents: `Search Google for the Rotten Tomatoes page of the production: "${title} (${year})". 
+      Extract the current 'Tomatometer' (critic percentage) and 'Audience Score' (audience percentage).
+      Return ONLY a JSON object with two keys: "tomatoMeter" and "audienceScore". 
+      Example format: {"tomatoMeter": "85%", "audienceScore": "90%"}. 
+      If a score is missing or the page isn't found, use "N/A".`,
       config: {
         tools: [{googleSearch: {}}],
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            tomatoMeter: { type: Type.STRING, description: "e.g. 85%" },
-            audienceScore: { type: Type.STRING, description: "e.g. 90%" }
+            tomatoMeter: { type: Type.STRING, description: "TomatoMeter score, e.g. 85%" },
+            audienceScore: { type: Type.STRING, description: "Audience score, e.g. 90%" }
           },
           required: ['tomatoMeter', 'audienceScore']
         }
@@ -63,12 +71,15 @@ async function enrichWithScores(title: string, year: string) {
     });
 
     const text = response.text;
-    // Strict type narrowing for Vercel's TSC
     if (typeof text !== 'string' || !text) {
       return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
     }
     
-    return JSON.parse(text);
+    const result = JSON.parse(text);
+    return {
+      tomatoMeter: result.tomatoMeter || 'N/A',
+      audienceScore: result.audienceScore || 'N/A'
+    };
   } catch (error) {
     console.error("Score Enrichment Error:", error);
     return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
@@ -78,14 +89,16 @@ async function enrichWithScores(title: string, year: string) {
 async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null> {
   try {
     const apiKey = process.env.API_KEY || '';
+    if (!apiKey) return null;
+    
     const ai = new GoogleGenAI({ apiKey });
     const isUrl = input.includes('http');
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: `Extract or find detailed metadata for: "${input}". 
-      ${isUrl ? 'This is a direct URL, please crawl it for scores, images, and trailer URLs.' : 'This is a title, please search for official data, including a YouTube trailer link.'}
-      Ensure TomatoMeter and Audience scores are included.
-      Return the result as JSON.`,
+      contents: `Perform a deep search for metadata on: "${input}". 
+      ${isUrl ? 'Extract scores and details directly from this URL.' : 'Search for official Rotten Tomatoes and TMDB data for this title.'}
+      Focus on getting the actual Tomatometer and Audience scores.
+      Return the result as a strict JSON object.`,
       config: {
         tools: [{googleSearch: {}}],
         responseMimeType: "application/json",
@@ -99,13 +112,13 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
             type: { type: Type.STRING, enum: ['Movie', 'TV Series'] },
             genre: { type: Type.ARRAY, items: { type: Type.STRING } },
             description: { type: Type.STRING },
-            poster: { type: Type.STRING, description: "Official poster URL" },
-            backdrop: { type: Type.STRING, description: "High-res backdrop URL" },
+            poster: { type: Type.STRING },
+            backdrop: { type: Type.STRING },
             runtime: { type: Type.STRING },
             seasons: { type: Type.NUMBER },
             director: { type: Type.STRING },
             cast: { type: Type.ARRAY, items: { type: Type.STRING } },
-            trailerUrl: { type: Type.STRING, description: "Official trailer URL (YouTube preferred)" }
+            trailerUrl: { type: Type.STRING }
           },
           required: ['title', 'year', 'tomatoMeter', 'audienceScore', 'type', 'genre', 'description', 'poster', 'backdrop', 'cast']
         }
@@ -113,10 +126,7 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     });
 
     const text = response.text;
-    // Strict type narrowing for Vercel's TSC
-    if (typeof text !== 'string' || !text) {
-      return null;
-    }
+    if (typeof text !== 'string' || !text) return null;
     
     const data = JSON.parse(text);
     return {

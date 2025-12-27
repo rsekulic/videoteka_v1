@@ -10,7 +10,6 @@ const fetchHeaders = {
 
 export async function searchTMDB(query: string, type: 'movie' | 'tv' = 'movie') {
   try {
-    // 1. Search for the ID
     const searchRes = await fetch(
       `${TMDB_BASE_URL}/search/${type}?query=${encodeURIComponent(query)}&include_adult=false&language=en-US&page=1`,
       { method: 'GET', headers: fetchHeaders }
@@ -19,17 +18,14 @@ export async function searchTMDB(query: string, type: 'movie' | 'tv' = 'movie') 
     
     if (!searchData.results || searchData.results.length === 0) return null;
     
-    // Pick the most popular result
     const bestMatch = searchData.results[0];
     
-    // 2. Fetch full details including credits and videos (trailers)
     const detailsRes = await fetch(
       `${TMDB_BASE_URL}/${type}/${bestMatch.id}?append_to_response=credits,videos&language=en-US`,
       { method: 'GET', headers: fetchHeaders }
     );
     const details = await detailsRes.json();
 
-    // Find a trailer (prioritize YouTube trailers)
     const trailer = details.videos?.results?.find(
       (v: any) => v.type === 'Trailer' && v.site === 'YouTube'
     ) || details.videos?.results?.find((v: any) => v.type === 'Trailer');
@@ -51,9 +47,8 @@ export async function searchTMDB(query: string, type: 'movie' | 'tv' = 'movie') 
                 details.credits?.crew?.find((c: any) => c.job === 'Executive Producer')?.name || 'Unknown',
       cast: details.credits?.cast?.slice(0, 5).map((c: any) => c.name) || [],
       trailerUrl,
-      // Placeholder scores to be enriched by Gemini
-      tomatoMeter: '...', 
-      audienceScore: '...'
+      tomatoMeter: 'N/A', 
+      audienceScore: 'N/A'
     };
   } catch (error) {
     console.error("TMDB API Error:", error);

@@ -1,24 +1,57 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MediaItem } from '../types';
-import { X, Share2, TrendingUp, Users, Clock, List, Play } from 'lucide-react';
+import { X, Share2, TrendingUp, Users, Clock, List, Play, Check } from 'lucide-react';
 
 interface MovieModalProps {
   item: MediaItem | null;
   onClose: () => void;
+  onToast?: (msg: string, type: 'success' | 'info') => void;
 }
 
-const MovieModal: React.FC<MovieModalProps> = ({ item, onClose }) => {
+const getSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+};
+
+const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     if (item) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+      setCopied(false);
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [item]);
 
   if (!item) return null;
+
+  const handleShare = async () => {
+    const slug = getSlug(item.title);
+    const shareUrl = `${window.location.origin}/${slug}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      if (onToast) onToast('Link copied to clipboard!', 'success');
+      setTimeout(() => setCopied(false), 2000);
+
+      if (navigator.share) {
+        await navigator.share({
+          title: item.title,
+          text: `Check out ${item.title} on Videoteka`,
+          url: shareUrl,
+        }).catch(() => {}); // Ignore user cancellation
+      }
+    } catch (err) {
+      console.error('Failed to share:', err);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10">
@@ -28,7 +61,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose }) => {
         onClick={onClose}
       />
       
-      {/* Content Container - Increased size to max-w-6xl */}
+      {/* Content Container */}
       <div className="relative w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col md:flex-row max-h-[90vh]">
         {/* Close Button */}
         <button 
@@ -50,7 +83,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose }) => {
 
         {/* Right: Content */}
         <div className="flex-1 p-8 md:p-14 overflow-y-auto bg-white text-black">
-          {/* Metadata Row - Simplified to single-row items */}
+          {/* Metadata Row */}
           <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-8">
             <span className="px-3 py-1 rounded-full bg-black/5 text-[10px] font-bold uppercase tracking-widest border border-black/5">
               {item.type}
@@ -127,19 +160,11 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose }) => {
             )}
             
             <button 
-              className="flex items-center justify-center gap-3 bg-neutral-100 hover:bg-neutral-200 transition-all text-black px-6 py-4 font-bold text-xs uppercase tracking-widest"
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: item.title,
-                    text: item.description,
-                    url: window.location.href,
-                  });
-                }
-              }}
+              className={`flex items-center justify-center gap-3 transition-all px-6 py-4 font-bold text-xs uppercase tracking-widest ${copied ? 'bg-green-500 text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-black'}`}
+              onClick={handleShare}
             >
-              <Share2 className="w-5 h-5" />
-              Share this find
+              {copied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+              {copied ? 'Copied Link' : 'Share this find'}
             </button>
           </div>
         </div>

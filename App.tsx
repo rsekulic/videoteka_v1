@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import MovieCard from './components/MovieCard';
 import MovieModal from './components/MovieModal';
@@ -10,6 +10,13 @@ import { INITIAL_DATA, GENRES } from './constants';
 import { MediaItem, Category } from './types';
 import { supabase } from './services/supabaseClient';
 import { Database, Cloud, AlertCircle, Sparkles, Star, Trash2 } from 'lucide-react';
+
+const getSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+};
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -35,6 +42,16 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  const handleSelectItem = useCallback((item: MediaItem | null) => {
+    setSelectedItem(item);
+    if (item) {
+      const slug = getSlug(item.title);
+      window.history.pushState({ itemId: item.id }, '', `/${slug}`);
+    } else {
+      window.history.pushState({}, '', '/');
+    }
+  }, []);
+
   const fetchData = async () => {
     try {
       const { data, error } = await supabase
@@ -44,12 +61,23 @@ const App: React.FC = () => {
 
       if (error) throw error;
 
+      let currentItems: MediaItem[] = [];
       if (data && data.length > 0) {
-        setItems(data);
+        currentItems = data;
         setIsUsingDemoData(false);
       } else {
-        setItems(INITIAL_DATA);
+        currentItems = INITIAL_DATA;
         setIsUsingDemoData(true);
+      }
+      setItems(currentItems);
+
+      // Handle deep linking on initial load
+      const path = window.location.pathname.slice(1);
+      if (path && path !== '') {
+        const linkedItem = currentItems.find(i => getSlug(i.title) === path);
+        if (linkedItem) {
+          setSelectedItem(linkedItem);
+        }
       }
     } catch (err) {
       console.error("Fetch Error:", err);
@@ -65,8 +93,23 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAdmin(!!session);
     });
-    return () => subscription.unsubscribe();
-  }, []);
+
+    const handlePopState = () => {
+      const path = window.location.pathname.slice(1);
+      if (!path) {
+        setSelectedItem(null);
+      } else {
+        const linkedItem = items.find(i => getSlug(i.title) === path);
+        if (linkedItem) setSelectedItem(linkedItem);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [items]);
 
   const handleAddItem = async (newItem: MediaItem) => {
     try {
@@ -335,7 +378,7 @@ const App: React.FC = () => {
               <MovieCard 
                 key={item.id} 
                 item={item} 
-                onClick={setSelectedItem}
+                onClick={handleSelectItem}
                 isAdmin={isAdmin}
                 onDelete={handleDeleteItem}
                 onToggleFavorite={handleToggleFavorite}
@@ -355,7 +398,11 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <MovieModal item={selectedItem} onClose={() => setSelectedItem(null)} />
+      <MovieModal 
+        item={selectedItem} 
+        onClose={() => handleSelectItem(null)} 
+        onToast={(msg, type) => addToast(msg, type)}
+      />
       
       {isAdmin && (
         <AddContentModal 
