@@ -31,7 +31,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
       setInputValue('');
       onClose();
     } else {
-      setError('Could not find metadata. Try a more specific title or a direct link.');
+      setError('Could not find metadata. Try a more specific title or a TMDB direct link.');
     }
     setIsLoading(false);
   };
@@ -58,7 +58,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">
-                Search Title
+                Title or TMDB URL
               </label>
               <div className="relative">
                 <input
@@ -66,7 +66,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="e.g. Severance or Inception"
+                  placeholder="e.g. Inception or paste a TMDB link"
                   className="w-full bg-neutral-50 border border-black/5 p-4 pr-12 outline-none focus:border-black/20 transition-all text-sm"
                   disabled={isLoading}
                 />
@@ -98,7 +98,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
           </form>
 
           <p className="mt-6 text-[11px] text-neutral-400 leading-relaxed">
-            We'll fetch official posters, backdrops, and details from TMDB and general search.
+            You can search by title or paste a direct <strong>themoviedb.org</strong> link to ensure accuracy.
           </p>
         </div>
       </div>

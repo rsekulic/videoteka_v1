@@ -1,13 +1,31 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { MediaItem } from "../types";
-import { searchTMDB } from "./tmdbService";
+import { searchTMDB, fetchTMDBById } from "./tmdbService";
 
 export async function fetchMovieDetails(input: string): Promise<Partial<MediaItem> | null> {
+  const trimmedInput = input.trim();
+  
+  // Detection for TMDB URLs: https://www.themoviedb.org/movie/123-title or /tv/123-title
+  const tmdbUrlPattern = /themoviedb\.org\/(movie|tv)\/(\d+)/i;
+  const urlMatch = trimmedInput.match(tmdbUrlPattern);
+
+  if (urlMatch) {
+    const type = urlMatch[1] === 'movie' ? 'movie' : 'tv';
+    const id = urlMatch[2];
+    const directData = await fetchTMDBById(id, type);
+    if (directData) {
+      return {
+        ...directData,
+        id: Math.random().toString(36).substr(2, 9)
+      } as MediaItem;
+    }
+  }
+
   // Primary search via TMDB for high-res assets
-  let tmdbData = await searchTMDB(input, 'movie');
+  let tmdbData = await searchTMDB(trimmedInput, 'movie');
   if (!tmdbData) {
-    tmdbData = await searchTMDB(input, 'tv');
+    tmdbData = await searchTMDB(trimmedInput, 'tv');
   }
   
   if (tmdbData) {
@@ -18,7 +36,7 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
   }
 
   // Fallback if TMDB fails completely
-  return fetchViaGemini(input);
+  return fetchViaGemini(trimmedInput);
 }
 
 async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null> {
