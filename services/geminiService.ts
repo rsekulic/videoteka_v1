@@ -3,8 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MediaItem } from "../types";
 import { searchTMDB } from "./tmdbService";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export async function fetchMovieDetails(input: string): Promise<Partial<MediaItem> | null> {
   const isUrl = input.includes('rottentomatoes.com');
   
@@ -50,6 +48,7 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
 
 async function enrichWithScores(title: string, year: string) {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find the exact Rotten Tomatoes TomatoMeter and Audience Score for the production: "${title} (${year})". 
@@ -67,7 +66,10 @@ async function enrichWithScores(title: string, year: string) {
         }
       }
     });
-    return JSON.parse(response.text);
+
+    const text = response.text;
+    if (!text) return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
+    return JSON.parse(text);
   } catch (error) {
     console.error("Score Enrichment Error:", error);
     return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
@@ -76,6 +78,7 @@ async function enrichWithScores(title: string, year: string) {
 
 async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null> {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const isUrl = input.includes('http');
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -109,7 +112,10 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
       }
     });
 
-    const data = JSON.parse(response.text);
+    const text = response.text;
+    if (!text) return null;
+    
+    const data = JSON.parse(text);
     return {
       ...data,
       id: Math.random().toString(36).substr(2, 9)
