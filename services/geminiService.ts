@@ -25,7 +25,6 @@ export async function fetchMovieDetails(input: string): Promise<Partial<MediaIte
   }
 
   // 2. If it's a search query, prioritize TMDB for high-quality official assets
-  // We try Movie first, then TV
   let tmdbData = await searchTMDB(input, 'movie');
   if (!tmdbData) {
     tmdbData = await searchTMDB(input, 'tv');
@@ -69,10 +68,13 @@ async function enrichWithScores(title: string, year: string) {
     });
 
     const text = response.text;
-    if (typeof text !== 'string') {
+    // Explicit narrowing for TypeScript's strictNullChecks
+    if (text === undefined || text === null || typeof text !== 'string') {
       return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
     }
-    return JSON.parse(text);
+    
+    // Using explicit cast 'as string' to satisfy JSON.parse requirement after guard
+    return JSON.parse(text as string);
   } catch (error) {
     console.error("Score Enrichment Error:", error);
     return { tomatoMeter: 'N/A', audienceScore: 'N/A' };
@@ -117,11 +119,13 @@ async function fetchViaGemini(input: string): Promise<Partial<MediaItem> | null>
     });
 
     const text = response.text;
-    if (typeof text !== 'string') {
+    // Explicit narrowing for TypeScript's strictNullChecks
+    if (text === undefined || text === null || typeof text !== 'string') {
       return null;
     }
     
-    const data = JSON.parse(text);
+    // Using explicit cast 'as string' to satisfy JSON.parse requirement after guard
+    const data = JSON.parse(text as string);
     return {
       ...data,
       id: Math.random().toString(36).substr(2, 9)
