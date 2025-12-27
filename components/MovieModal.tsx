@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MediaItem } from '../types';
-import { X, Share2, Clock, List, Play, Check, RefreshCw, Loader2 } from 'lucide-react';
+import { X, Share2, Clock, List, Play, Check, RefreshCw, Loader2, Star } from 'lucide-react';
 import { fetchMovieDetails } from '../services/geminiService';
 
 interface MovieModalProps {
@@ -95,7 +95,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
         {/* Content Section */}
         <div className="flex-1 p-8 md:p-14 overflow-y-auto bg-white text-black">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-8">
-            <span className="px-3 py-1 rounded-full bg-black/5 text-[10px] font-bold uppercase tracking-widest border border-black/5">
+            <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-black/5">
               {item.type}
             </span>
             
@@ -115,6 +115,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
               </div>
             )}
 
+            {item.is_favorite && (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-400 text-black rounded-sm">
+                <Star className="w-3 h-3 fill-current" />
+                <span className="text-[10px] font-black uppercase tracking-wider">Top Pick</span>
+              </div>
+            )}
+
             {isAdmin && (
                <button onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors disabled:opacity-30">
                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -126,7 +133,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
           <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tighter leading-none">{item.title}</h1>
 
           <div className="flex flex-wrap gap-2 mb-10">
-            {item.genre.map(g => <span key={g} className="px-3 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest">{g}</span>)}
+            {item.genre.map(g => <span key={g} className="px-3 py-1 bg-black/5 border border-black/5 text-black text-[10px] font-bold uppercase tracking-widest">{g}</span>)}
           </div>
 
           <p className="text-xl text-black/70 leading-relaxed mb-12 max-w-3xl">{item.description}</p>

@@ -44,8 +44,9 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, onClick, isAdmin, onDelete,
 
       {/* Favorite Badge (Public) */}
       {!isAdmin && item.is_favorite && (
-        <div className="absolute top-2 left-2 z-20 p-1.5 bg-black/60 backdrop-blur-md text-yellow-400 border border-white/10 rounded-full shadow-lg">
-          <Star className="w-3.5 h-3.5 fill-current" />
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2 py-1 bg-black/80 backdrop-blur-md text-yellow-400 border border-white/10 shadow-xl pointer-events-none">
+          <Star className="w-2.5 h-2.5 fill-current" />
+          <span className="text-[9px] font-black uppercase tracking-[0.15em] leading-none">Top Pick</span>
         </div>
       )}
 
