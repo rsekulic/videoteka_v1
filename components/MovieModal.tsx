@@ -1,12 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { MediaItem } from '../types';
-import { X, Share2, TrendingUp, Users, Clock, List, Play, Check } from 'lucide-react';
+import { X, Share2, TrendingUp, Users, Clock, List, Play, Check, RefreshCw, Loader2 } from 'lucide-react';
+import { fetchMovieDetails } from '../services/geminiService';
 
 interface MovieModalProps {
   item: MediaItem | null;
   onClose: () => void;
-  onToast?: (msg: string, type: 'success' | 'info') => void;
+  isAdmin?: boolean;
+  onUpdate?: (item: MediaItem) => void;
+  onToast?: (msg: string, type: 'success' | 'info' | 'error') => void;
 }
 
 const getSlug = (title: string) => {
@@ -16,8 +19,9 @@ const getSlug = (title: string) => {
     .replace(/(^-|-$)/g, '');
 };
 
-const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
+const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdate, onToast }) => {
   const [copied, setCopied] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -25,6 +29,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
     } else {
       document.body.style.overflow = 'unset';
       setCopied(false);
+      setIsRefreshing(false);
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [item]);
@@ -46,10 +51,39 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
           title: item.title,
           text: `Check out ${item.title} on Videoteka`,
           url: shareUrl,
-        }).catch(() => {}); // Ignore user cancellation
+        }).catch(() => {});
       }
     } catch (err) {
       console.error('Failed to share:', err);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!isAdmin || !onUpdate) return;
+    
+    setIsRefreshing(true);
+    if (onToast) onToast(`Refreshing metadata for ${item.title}...`, 'info');
+
+    try {
+      const freshDetails = await fetchMovieDetails(item.title);
+      if (freshDetails) {
+        // Merge the fresh details with current ID and favorite status
+        const updated = {
+          ...item,
+          ...freshDetails,
+          id: item.id,
+          is_favorite: item.is_favorite
+        } as MediaItem;
+        
+        onUpdate(updated);
+        if (onToast) onToast('Metadata updated successfully!', 'success');
+      } else {
+        throw new Error("Could not fetch new data.");
+      }
+    } catch (err: any) {
+      if (onToast) onToast(err.message || 'Refresh failed.', 'error');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -79,6 +113,15 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent md:hidden" />
+          
+          {isRefreshing && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-10 h-10 text-black animate-spin" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-black">Syncing...</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Content */}
@@ -100,6 +143,18 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, onToast }) => {
               <span className="text-[10px] uppercase font-bold text-neutral-400">Audience:</span>
               <span className="text-sm font-bold">{item.audienceScore || 'N/A'}</span>
             </div>
+
+            {isAdmin && (
+               <button 
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 text-black hover:text-neutral-500 transition-colors disabled:opacity-30"
+                title="Refresh scores and data"
+               >
+                 <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                 <span className="text-[10px] uppercase font-bold border-b border-black/10">Refresh Data</span>
+               </button>
+            )}
 
             {item.runtime && (
               <div className="flex items-center gap-1.5 text-black/60 text-sm whitespace-nowrap">

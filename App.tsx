@@ -39,12 +39,11 @@ const App: React.FC = () => {
     if (typeof msg === 'string') {
       text = msg;
     } else if (msg && typeof msg === 'object') {
-      // Check for Supabase error format or standard Error object
       text = msg.message || msg.error_description || JSON.stringify(msg);
     }
 
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, text, type: type === 'error' ? 'info' : type }]);
+    setToasts(prev => [...prev, { id, text, type }]);
   };
 
   const removeToast = (id: string) => {
@@ -89,7 +88,6 @@ const App: React.FC = () => {
         }
       }
     } catch (err: any) {
-      // Table missing fallback
       if (err?.code === '42P01') {
         console.warn("Table 'media_items' missing. Falling back to local data.");
       } else {
@@ -144,6 +142,31 @@ const App: React.FC = () => {
         }
         addToast(`${newItem.title} added to directory.`);
       }
+    } catch (err: any) {
+      addToast(err, 'error');
+    }
+  };
+
+  const handleUpdateItem = async (updatedItem: MediaItem) => {
+    if (isUsingDemoData) {
+      setItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      setSelectedItem(updatedItem);
+      addToast('Local item updated (Demo).', 'info');
+      return;
+    }
+
+    try {
+      const { id, ...updates } = updatedItem;
+      const { error } = await supabase
+        .from('media_items')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setItems(prev => prev.map(i => i.id === id ? updatedItem : i));
+      setSelectedItem(updatedItem);
+      addToast(`${updatedItem.title} metadata updated.`);
     } catch (err: any) {
       addToast(err, 'error');
     }
@@ -415,6 +438,8 @@ const App: React.FC = () => {
       <MovieModal 
         item={selectedItem} 
         onClose={() => handleSelectItem(null)} 
+        isAdmin={isAdmin}
+        onUpdate={handleUpdateItem}
         onToast={(msg, type) => addToast(msg, type)}
       />
       
