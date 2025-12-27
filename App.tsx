@@ -11,6 +11,8 @@ import { MediaItem, Category } from './types';
 import { supabase } from './services/supabaseClient';
 import { Database, Cloud, AlertCircle, Sparkles, Star, Trash2, Terminal } from 'lucide-react';
 
+const STORAGE_KEY = 'videoteka_items_v2';
+
 const getSlug = (title: string) => {
   return title
     .toLowerCase()
@@ -19,7 +21,11 @@ const getSlug = (title: string) => {
 };
 
 const App: React.FC = () => {
-  const [items, setItems] = useState<MediaItem[]>([]);
+  const [items, setItems] = useState<MediaItem[]>(() => {
+    // Initial load from LocalStorage for immediate UI
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : INITIAL_DATA;
+  });
   const [activeCategory, setActiveCategory] = useState<Category>('All');
   const [activeGenre, setActiveGenre] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +58,11 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  // Persist to LocalStorage whenever items change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
+
   const fetchData = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -61,34 +72,28 @@ const App: React.FC = () => {
 
       if (error) throw error;
 
-      let currentItems: MediaItem[] = [];
       if (data && data.length > 0) {
-        currentItems = data;
+        setItems(data);
         setIsUsingDemoData(false);
       } else {
-        currentItems = INITIAL_DATA;
+        // If Supabase is connected but table empty, keep LocalStorage/INITIAL data but flag it
         setIsUsingDemoData(true);
       }
-      setItems(currentItems);
 
       // Handle deep linking on initial fetch
       const path = window.location.pathname.slice(1);
       if (path && path !== '') {
+        const currentItems = data && data.length > 0 ? data : items;
         const linkedItem = currentItems.find(i => getSlug(i.title) === path);
         if (linkedItem) setSelectedItem(linkedItem);
       }
     } catch (err: any) {
-      if (err?.code === '42P01') {
-        console.warn("Table missing. Fallback to local.");
-      } else if (err?.message?.includes("is_favorite")) {
-        addToast("Database Schema Mismatch: 'is_favorite' column is missing.", "error");
-      }
-      setItems(INITIAL_DATA);
+      console.warn("Fetch issue:", err);
       setIsUsingDemoData(true);
     } finally {
       setIsInitialLoad(false);
     }
-  }, [addToast]);
+  }, [items]);
 
   useEffect(() => {
     fetchData();
@@ -101,7 +106,6 @@ const App: React.FC = () => {
       if (!path) {
         setSelectedItem(null);
       } else {
-        // Use the current state values which might be updated
         setItems(prev => {
            const linkedItem = prev.find(i => getSlug(i.title) === path);
            if (linkedItem) setSelectedItem(linkedItem);
@@ -140,29 +144,29 @@ const App: React.FC = () => {
       if (error) throw error;
 
       if (data) {
-        if (isUsingDemoData) {
-          setItems([data[0]]);
-          setIsUsingDemoData(false);
-        } else {
-          setItems(prev => [data[0], ...prev]);
-        }
+        setItems(prev => [data[0], ...prev]);
+        setIsUsingDemoData(false);
         addToast(`${newItem.title} added.`);
       }
     } catch (err: any) {
-      addToast(err, 'error');
+      // Local fallback if DB fails
+      const localItem = { ...newItem, id: Math.random().toString(36).substr(2, 9), is_favorite: false };
+      setItems(prev => [localItem, ...prev]);
+      addToast('Added locally (Supabase Sync Failed)', 'info');
     }
   };
 
   const handleUpdateItem = async (updatedItem: MediaItem) => {
+    const { id, ...updates } = updatedItem;
+    
     if (isUsingDemoData) {
-      setItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      setItems(prev => prev.map(i => i.id === id ? updatedItem : i));
       setSelectedItem(updatedItem);
-      addToast('Local updated.', 'info');
+      addToast('Metadata updated locally.', 'info');
       return;
     }
 
     try {
-      const { id, ...updates } = updatedItem;
       const { error } = await supabase
         .from('media_items')
         .update(updates)
@@ -186,14 +190,16 @@ const App: React.FC = () => {
 
     const newFavStatus = !item.is_favorite;
 
+    // Apply local state update immediately for snappy UI
+    setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
+
     if (isUsingDemoData) {
-      setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
-      addToast('Favorite toggled (Local).', 'info');
+      addToast(newFavStatus ? 'Added to favorites (Local).' : 'Removed from favorites (Local).', 'info');
       return;
     }
 
     if (!isAdmin) {
-      addToast('Admin login required.', 'info');
+      addToast('Admin login required to save to database.', 'info');
       return;
     }
 
@@ -204,8 +210,6 @@ const App: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
-
-      setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
       addToast(newFavStatus ? 'Added to favorites.' : 'Removed from favorites.');
     } catch (err: any) {
       addToast(err, 'error');
@@ -215,7 +219,7 @@ const App: React.FC = () => {
   const handleCopySQL = () => {
     const sql = `ALTER TABLE media_items ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN DEFAULT FALSE;`;
     navigator.clipboard.writeText(sql);
-    addToast("SQL command copied! Run this in your Supabase SQL Editor.", "success");
+    addToast("SQL command copied!", "success");
   };
 
   const handleBootstrap = async () => {
@@ -292,21 +296,23 @@ const App: React.FC = () => {
       } else if (activeCategory === 'TV Series') {
         matchesCategory = item.type === 'TV Series';
       } else if (activeCategory === 'Favorites') {
-        matchesCategory = item.is_favorite === true;
+        matchesCategory = !!item.is_favorite;
       }
 
       const matchesGenre = activeGenre === 'All' || item.genre.includes(activeGenre);
       return matchesSearch && matchesCategory && matchesGenre;
     });
 
-    // Priority Sorting: Favorites first, then (optionally) by title or date
+    // Priority Sorting: Favorites first, then rest
     return [...filtered].sort((a, b) => {
-      if (a.is_favorite === b.is_favorite) return 0;
-      return a.is_favorite ? -1 : 1;
+      const favA = !!a.is_favorite;
+      const favB = !!b.is_favorite;
+      if (favA === favB) return 0;
+      return favA ? -1 : 1;
     });
   }, [items, activeCategory, activeGenre, searchQuery]);
 
-  const favoritesCount = useMemo(() => items.filter(i => i.is_favorite).length, [items]);
+  const favoritesCount = useMemo(() => items.filter(i => !!i.is_favorite).length, [items]);
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] text-[#171717]">

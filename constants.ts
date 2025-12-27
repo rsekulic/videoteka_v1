@@ -13,7 +13,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/interstellar_bg/1200/600',
     runtime: '2h 49m',
     director: 'Christopher Nolan',
-    cast: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain']
+    cast: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain'],
+    is_favorite: false
   },
   {
     id: '2',
@@ -26,7 +27,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/succession_bg/1200/600',
     seasons: 4,
     director: 'Jesse Armstrong',
-    cast: ['Brian Cox', 'Jeremy Strong', 'Sarah Snook']
+    cast: ['Brian Cox', 'Jeremy Strong', 'Sarah Snook'],
+    is_favorite: false
   },
   {
     id: '3',
@@ -39,7 +41,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/dune2_bg/1200/600',
     runtime: '2h 46m',
     director: 'Denis Villeneuve',
-    cast: ['Timothée Chalamet', 'Zendaya', 'Rebecca Ferguson']
+    cast: ['Timothée Chalamet', 'Zendaya', 'Rebecca Ferguson'],
+    is_favorite: false
   },
   {
     id: '4',
@@ -52,7 +55,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/severance_bg/1200/600',
     seasons: 1,
     director: 'Ben Stiller',
-    cast: ['Adam Scott', 'Zach Cherry', 'Britt Lower']
+    cast: ['Adam Scott', 'Zach Cherry', 'Britt Lower'],
+    is_favorite: false
   },
   {
     id: '5',
@@ -65,7 +69,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/thebear_bg/1200/600',
     seasons: 3,
     director: 'Christopher Storer',
-    cast: ['Jeremy Allen White', 'Ebon Moss-Bachrach', 'Ayo Edebiri']
+    cast: ['Jeremy Allen White', 'Ebon Moss-Bachrach', 'Ayo Edebiri'],
+    is_favorite: false
   },
   {
     id: '6',
@@ -78,7 +83,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/oppenheimer_bg/1200/600',
     runtime: '3h',
     director: 'Christopher Nolan',
-    cast: ['Cillian Murphy', 'Emily Blunt', 'Matt Damon']
+    cast: ['Cillian Murphy', 'Emily Blunt', 'Matt Damon'],
+    is_favorite: false
   },
   {
     id: '7',
@@ -91,7 +97,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/dark_bg/1200/600',
     seasons: 3,
     director: 'Baran bo Odar',
-    cast: ['Louis Hofmann', 'Karoline Eichhorn', 'Lisa Vicari']
+    cast: ['Louis Hofmann', 'Karoline Eichhorn', 'Lisa Vicari'],
+    is_favorite: false
   },
   {
     id: '8',
@@ -104,7 +111,8 @@ export const INITIAL_DATA: MediaItem[] = [
     backdrop: 'https://picsum.photos/seed/parasite_bg/1200/600',
     runtime: '2h 12m',
     director: 'Bong Joon Ho',
-    cast: ['Song Kang-ho', 'Lee Sun-kyun', 'Cho Yeo-jeong']
+    cast: ['Song Kang-ho', 'Lee Sun-kyun', 'Cho Yeo-jeong'],
+    is_favorite: false
   }
 ];
 
