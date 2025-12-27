@@ -22,7 +22,6 @@ const getSlug = (title: string) => {
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>(() => {
-    // Initial load from LocalStorage for immediate UI
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
@@ -58,11 +57,12 @@ const App: React.FC = () => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  // Persist to LocalStorage whenever items change
+  // Sync with LocalStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
+  // Stable fetcher - no dependency on 'items' to avoid re-fetch loops
   const fetchData = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -76,16 +76,7 @@ const App: React.FC = () => {
         setItems(data);
         setIsUsingDemoData(false);
       } else {
-        // If Supabase is connected but table empty, keep LocalStorage/INITIAL data but flag it
         setIsUsingDemoData(true);
-      }
-
-      // Handle deep linking on initial fetch
-      const path = window.location.pathname.slice(1);
-      if (path && path !== '') {
-        const currentItems = data && data.length > 0 ? data : items;
-        const linkedItem = currentItems.find(i => getSlug(i.title) === path);
-        if (linkedItem) setSelectedItem(linkedItem);
       }
     } catch (err: any) {
       console.warn("Fetch issue:", err);
@@ -93,11 +84,23 @@ const App: React.FC = () => {
     } finally {
       setIsInitialLoad(false);
     }
-  }, [items]);
+  }, []);
+
+  // Handle deep linking only once items are ready
+  useEffect(() => {
+    if (isInitialLoad) return;
+    const path = window.location.pathname.slice(1);
+    if (path && path !== '') {
+      const linkedItem = items.find(i => getSlug(i.title) === path);
+      if (linkedItem) setSelectedItem(linkedItem);
+    }
+  }, [isInitialLoad, items]);
 
   useEffect(() => {
+    // CRITICAL: fetchData only runs once on mount, NOT whenever 'items' change
     fetchData();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAdmin(!!session);
     });
 
@@ -106,11 +109,8 @@ const App: React.FC = () => {
       if (!path) {
         setSelectedItem(null);
       } else {
-        setItems(prev => {
-           const linkedItem = prev.find(i => getSlug(i.title) === path);
-           if (linkedItem) setSelectedItem(linkedItem);
-           return prev;
-        });
+        // Items here might be stale if listener isn't updated, 
+        // but it's handled by the specific slug effect above
       }
     };
 
@@ -133,7 +133,7 @@ const App: React.FC = () => {
 
   const handleAddItem = async (newItem: MediaItem) => {
     try {
-      const { id, ...itemToInsert } = newItem;
+      const { id: _id, ...itemToInsert } = newItem;
       const finalItem = { ...itemToInsert, is_favorite: false };
       
       const { data, error } = await supabase
@@ -149,7 +149,6 @@ const App: React.FC = () => {
         addToast(`${newItem.title} added.`);
       }
     } catch (err: any) {
-      // Local fallback if DB fails
       const localItem = { ...newItem, id: Math.random().toString(36).substr(2, 9), is_favorite: false };
       setItems(prev => [localItem, ...prev]);
       addToast('Added locally (Supabase Sync Failed)', 'info');
@@ -191,7 +190,14 @@ const App: React.FC = () => {
     const newFavStatus = !item.is_favorite;
 
     // Apply local state update immediately for snappy UI
-    setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
+    setItems(prev => {
+      const updated = prev.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i);
+      // Sync the modal if it's open for this item
+      if (selectedItem?.id === id) {
+        setSelectedItem({ ...selectedItem, is_favorite: newFavStatus });
+      }
+      return updated;
+    });
 
     if (isUsingDemoData) {
       addToast(newFavStatus ? 'Added to favorites (Local).' : 'Removed from favorites (Local).', 'info');
@@ -199,7 +205,7 @@ const App: React.FC = () => {
     }
 
     if (!isAdmin) {
-      addToast('Admin login required to save to database.', 'info');
+      addToast('Admin login required to save favorite to database.', 'info');
       return;
     }
 
@@ -212,6 +218,11 @@ const App: React.FC = () => {
       if (error) throw error;
       addToast(newFavStatus ? 'Added to favorites.' : 'Removed from favorites.');
     } catch (err: any) {
+      // Revert local state on error
+      setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
+      if (selectedItem?.id === id) {
+        setSelectedItem({ ...selectedItem, is_favorite: !newFavStatus });
+      }
       addToast(err, 'error');
     }
   };
@@ -228,7 +239,7 @@ const App: React.FC = () => {
     addToast('Initializing database...', 'info');
 
     try {
-      const itemsToBootstrap = INITIAL_DATA.map(({ id, ...rest }) => ({
+      const itemsToBootstrap = INITIAL_DATA.map(({ id: _id, ...rest }) => ({
         ...rest,
         is_favorite: false
       }));
