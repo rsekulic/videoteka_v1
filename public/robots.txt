@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Instructions for Videoteka:
+# Place your 'og-image.jpg' in this 'public' folder.
+# In a Vite project, files in 'public' are served from the root path.
+# This will fix the Facebook Scraper "invalid content type" error.
