@@ -67,10 +67,10 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col md:flex-row max-h-[90vh]">
-        <button onClick={onClose} className="absolute top-6 right-6 z-10 p-2 rounded-full bg-black/5 border border-black/5 hover:bg-black/10 transition-colors">
+      <div className="relative w-full max-w-6xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+        <button onClick={onClose} className="absolute top-6 right-6 z-10 p-2 rounded-full bg-black/5 border border-black/5 hover:bg-black/10">
           <X className="w-5 h-5 text-black" />
         </button>
 
@@ -79,14 +79,14 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
           <img src={item.poster} alt={item.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent md:hidden" />
           {isRefreshing && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
-              <Loader2 className="w-10 h-10 text-black animate-spin" />
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+              <Loader2 className="w-10 h-10 text-black" />
             </div>
           )}
         </div>
 
         {/* Content Section */}
-        <div className="flex-1 p-8 md:p-14 overflow-y-auto bg-white text-black">
+        <div className="flex-1 p-8 md:p-14 overflow-y-auto bg-white text-black text-xs">
           <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mb-8">
             <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-black/5">
               {item.type}
@@ -116,8 +116,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
             )}
 
             {isAdmin && (
-               <button onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1.5 text-black/40 hover:text-black transition-colors disabled:opacity-30">
-                 <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+               <button onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-1.5 text-black/40 hover:text-black disabled:opacity-30">
+                 <RefreshCw className="w-3.5 h-3.5" />
                  <span className="text-[10px] uppercase font-bold border-b border-black/10">Sync Data</span>
                </button>
             )}
@@ -144,11 +144,11 @@ const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdat
 
           <div className="flex flex-wrap gap-4">
             {item.trailerUrl && (
-              <a href={item.trailerUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 bg-black hover:bg-neutral-800 transition-all text-white px-8 py-4 font-bold text-xs uppercase tracking-widest shadow-xl">
+              <a href={item.trailerUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 bg-black hover:bg-neutral-800 text-white px-8 py-4 font-bold text-xs uppercase tracking-widest shadow-xl">
                 <Play className="w-5 h-5 fill-current" /> Watch Trailer
               </a>
             )}
-            <button className={`flex items-center justify-center gap-3 transition-all px-6 py-4 font-bold text-xs uppercase tracking-widest ${copied ? 'bg-green-500 text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-black'}`} onClick={handleShare}>
+            <button className={`flex items-center justify-center gap-3 px-6 py-4 font-bold text-xs uppercase tracking-widest ${copied ? 'bg-green-500 text-white' : 'bg-neutral-100 hover:bg-neutral-200 text-black'}`} onClick={handleShare}>
               {copied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
               {copied ? 'Copied' : 'Share'}
             </button>

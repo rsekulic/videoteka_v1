@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Lock, Mail, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
@@ -38,16 +37,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={onClose} />
       
-      <div className={`relative w-full max-w-sm bg-white shadow-2xl transition-transform duration-300 ${error ? 'animate-shake' : 'animate-in zoom-in-95'}`}>
-        <div className="p-8">
+      <div className="relative w-full max-w-sm bg-white shadow-2xl">
+        <div className="p-8 text-xs">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-black" />
               <h2 className="text-sm font-bold uppercase tracking-widest">Admin Access</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-neutral-100 transition-colors">
+            <button onClick={onClose} className="p-1 hover:bg-neutral-100">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -61,7 +60,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
-                className={`w-full bg-neutral-50 border ${error ? 'border-red-500' : 'border-black/5'} p-4 pl-12 outline-none focus:border-black/20 transition-all text-sm`}
+                className={`w-full bg-neutral-50 border ${error ? 'border-red-500' : 'border-black/5'} p-4 pl-12 outline-none focus:border-black/20 text-sm`}
                 required
               />
             </div>
@@ -73,7 +72,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className={`w-full bg-neutral-50 border ${error ? 'border-red-500' : 'border-black/5'} p-4 pl-12 outline-none focus:border-black/20 transition-all text-sm`}
+                className={`w-full bg-neutral-50 border ${error ? 'border-red-500' : 'border-black/5'} p-4 pl-12 outline-none focus:border-black/20 text-sm`}
                 required
               />
             </div>
@@ -85,14 +84,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-4 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 transition-all group disabled:bg-neutral-400"
+              className="w-full bg-black text-white py-4 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 group disabled:bg-neutral-400"
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4" />
               ) : (
                 <>
                   Unlock Dashboard
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1" />
                 </>
               )}
             </button>

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { CheckCircle, Info, X, AlertCircle } from 'lucide-react';
 
@@ -28,10 +27,10 @@ const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 bg-black text-white px-4 py-3 shadow-2xl animate-in slide-in-from-right-4 fade-in duration-300 min-w-[200px] max-w-sm border border-white/10">
+    <div className="flex items-center gap-3 bg-black text-white px-4 py-3 shadow-2xl min-w-[200px] max-w-sm border border-white/10">
       {getIcon()}
       <span className="text-[12px] font-bold tracking-tight leading-snug">{message.text}</span>
-      <button onClick={() => onClose(message.id)} className="ml-auto pl-4 opacity-50 hover:opacity-100 transition-opacity">
+      <button onClick={() => onClose(message.id)} className="ml-auto pl-4 opacity-50 hover:opacity-100">
         <X className="w-3 h-3" />
       </button>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Sparkles, Loader2, Link as LinkIcon, Database } from 'lucide-react';
 import { fetchMovieDetails } from '../services/geminiService';
@@ -40,8 +39,8 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <div className="p-8">
+      <div className="relative w-full max-w-lg bg-white shadow-2xl">
+        <div className="p-8 text-xs">
           <div className="flex justify-between items-center mb-8">
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-bold tracking-tight">Add to Directory</h2>
@@ -50,7 +49,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
                 Powered by TMDB & Gemini
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-neutral-100 transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-neutral-100">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -67,7 +66,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="e.g. Inception or paste a TMDB link"
-                  className="w-full bg-neutral-50 border border-black/5 p-4 pr-12 outline-none focus:border-black/20 transition-all text-sm"
+                  className="w-full bg-neutral-50 border border-black/5 p-4 pr-12 outline-none focus:border-black/20 text-sm"
                   disabled={isLoading}
                 />
                 <LinkIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-300" />
@@ -81,11 +80,11 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
-              className="w-full bg-black text-white py-4 font-bold text-sm flex items-center justify-center gap-2 hover:bg-neutral-800 disabled:bg-neutral-200 disabled:cursor-not-allowed transition-all"
+              className="w-full bg-black text-white py-4 font-bold text-sm flex items-center justify-center gap-2 hover:bg-neutral-800 disabled:bg-neutral-200 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4" />
                   Fetching High-Res Metadata...
                 </>
               ) : (

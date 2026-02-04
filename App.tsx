@@ -85,7 +85,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isInitialLoad) return;
-    // Get clean path without leading/trailing slashes
     const path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (path) {
       const linked = items.find(i => getSlug(i.title) === decodeURIComponent(path));
@@ -104,23 +103,17 @@ const App: React.FC = () => {
 
   const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
     const item = items.find(i => i.id === id);
     if (!item) return;
-
     const newFavStatus = !item.is_favorite;
-
     setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
-    
     if (selectedItem?.id === id) {
       setSelectedItem(prev => prev ? { ...prev, is_favorite: newFavStatus } : null);
     }
-
     if (isUsingDemoData || !isUUID(id)) {
       addToast(newFavStatus ? 'Added to local favorites' : 'Removed from local favorites', 'info');
       return;
     }
-
     if (!isAdmin) {
       addToast('Admin login required to sync with cloud.', 'info');
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
@@ -129,13 +122,11 @@ const App: React.FC = () => {
       }
       return;
     }
-
     try {
       const { error } = await supabase
         .from('media_items')
         .update({ is_favorite: newFavStatus })
         .eq('id', id);
-
       if (error) throw error;
       addToast(newFavStatus ? 'Synced to cloud' : 'Removed from cloud');
     } catch (err: any) {
@@ -151,9 +142,7 @@ const App: React.FC = () => {
     const { id, ...updates } = updatedItem;
     setItems(prev => prev.map(i => i.id === id ? updatedItem : i));
     setSelectedItem(updatedItem);
-
     if (isUsingDemoData || !isUUID(id)) return;
-
     try {
       const { error } = await supabase.from('media_items').update(updates).eq('id', id);
       if (error) throw error;
@@ -183,10 +172,8 @@ const App: React.FC = () => {
   const handleDeleteItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm('Delete this entry?')) return;
-    
     setItems(prev => prev.filter(i => i.id !== id));
     if (isUsingDemoData || !isUUID(id)) return;
-
     try {
       const { error } = await supabase.from('media_items').delete().eq('id', id);
       if (error) throw error;
@@ -199,7 +186,6 @@ const App: React.FC = () => {
   const filteredItems = useMemo(() => {
     const filtered = items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      
       let matchesGenre = activeGenre === 'All';
       if (!matchesGenre) {
         if (activeGenre === 'Sci-Fi') {
@@ -208,15 +194,12 @@ const App: React.FC = () => {
           matchesGenre = item.genre.includes(activeGenre);
         }
       }
-      
       let matchesCategory = true;
       if (activeCategory === 'Movies') matchesCategory = item.type === 'Movie';
       else if (activeCategory === 'TV Series') matchesCategory = item.type === 'TV Series';
       else if (activeCategory === 'Favorites') matchesCategory = !!item.is_favorite;
-
       return matchesSearch && matchesGenre && matchesCategory;
     });
-
     return [...filtered].sort((a, b) => {
       const favA = a.is_favorite ? 1 : 0;
       const favB = b.is_favorite ? 1 : 0;
@@ -230,7 +213,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f7f7f7] text-[#171717]">
       <Navbar onSearch={setSearchQuery} onOpenAddModal={() => setIsAddModalOpen(true)} isAdmin={isAdmin} />
-
       <main className="max-w-[1440px] mx-auto px-3 py-16">
         <section className="mb-20 flex flex-col md:flex-row justify-between items-start gap-12">
           <div className="flex-1">
@@ -241,7 +223,6 @@ const App: React.FC = () => {
               From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
             </p>
           </div>
-          
           {isAdmin && (
             <div className="bg-white border border-black/5 p-6 shadow-sm min-w-[280px]">
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Database Sync</span>
@@ -250,26 +231,24 @@ const App: React.FC = () => {
                 <Star className="w-3 h-3 fill-current" /> {favoritesCount} Favorites
               </div>
               <div className="mt-4 pt-4 border-t border-black/5">
-                 <button onClick={() => fetchData()} className="w-full bg-neutral-100 text-[10px] font-bold uppercase py-2 hover:bg-neutral-200 transition-colors">Force Refresh</button>
+                 <button onClick={() => fetchData()} className="w-full bg-neutral-100 text-[10px] font-bold uppercase py-2 hover:bg-neutral-200">Force Refresh</button>
               </div>
             </div>
           )}
         </section>
-
         <div className="flex flex-col gap-8 mb-16">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {(['All', 'Movies', 'TV Series', 'Favorites'] as Category[]).map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 text-[12px] font-bold transition-all flex items-center gap-2 ${activeCategory === cat ? 'bg-black text-white' : 'bg-white text-neutral-500 border border-black/5'}`}
+                className={`px-5 py-2 text-[12px] font-bold flex items-center gap-2 ${activeCategory === cat ? 'bg-black text-white' : 'bg-white text-neutral-500 border border-black/5'}`}
               >
                 {cat === 'Favorites' && <Star className={`w-3 h-3 ${activeCategory === 'Favorites' ? 'fill-white' : ''}`} />}
                 {cat}
               </button>
             ))}
           </div>
-
           <div className="flex items-center gap-6 overflow-x-auto pb-4 border-b border-black/5">
             {GENRES.map(genre => (
               <button key={genre} onClick={() => setActiveGenre(genre)} className={`text-[12px] font-bold whitespace-nowrap ${activeGenre === genre ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
@@ -278,10 +257,9 @@ const App: React.FC = () => {
             ))}
           </div>
         </div>
-
         {isInitialLoad ? (
           <div className="py-24 text-center">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-4 opacity-20" />
+            <Loader2 className="w-6 h-6 mx-auto mb-4 opacity-20" />
             <p className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">Loading Directory...</p>
           </div>
         ) : filteredItems.length > 0 ? (
@@ -303,7 +281,6 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
-
       <MovieModal 
         item={selectedItem} 
         onClose={() => handleSelectItem(null)} 
@@ -313,11 +290,9 @@ const App: React.FC = () => {
       />
       {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddItem} />}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
-
       <div className="fixed bottom-8 right-8 z-[200] flex flex-col gap-2">
         {toasts.map(toast => <Toast key={toast.id} message={toast} onClose={removeToast} />)}
       </div>
-
       <footer className="border-t border-black/5 mt-32 py-16 px-3 bg-white">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-black font-bold text-lg">Videoteka</div>
@@ -329,9 +304,8 @@ const App: React.FC = () => {
           </button>
         </div>
       </footer>
-
       {!isAdmin && (
-        <button onClick={() => setIsLoginModalOpen(true)} className="fixed bottom-6 left-6 text-neutral-200 hover:text-black transition-colors">
+        <button onClick={() => setIsLoginModalOpen(true)} className="fixed bottom-6 left-6 text-neutral-200 hover:text-black">
           <Lock className="w-4 h-4" />
         </button>
       )}

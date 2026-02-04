@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Trash2, Star } from 'lucide-react';
 import { MediaItem } from '../types';
@@ -20,11 +19,11 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, onClick, isAdmin, onDelete,
     >
       {/* Admin Actions */}
       {isAdmin && (
-        <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all">
+        <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100">
           {onDelete && (
             <button
               onClick={(e) => onDelete(item.id, e)}
-              className="p-2 bg-white/90 backdrop-blur-md text-red-500 hover:bg-red-500 hover:text-white transition-all border border-black/5"
+              className="p-2 bg-white/90 backdrop-blur-md text-red-500 hover:bg-red-500 hover:text-white border border-black/5"
               title="Remove"
             >
               <Trash2 className="w-4 h-4" />
@@ -33,7 +32,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, onClick, isAdmin, onDelete,
           {onToggleFavorite && (
             <button
               onClick={(e) => onToggleFavorite(item.id, e)}
-              className={`p-2 bg-white/90 backdrop-blur-md transition-all border border-black/5 ${item.is_favorite ? 'text-yellow-500' : 'text-neutral-400 hover:text-yellow-500'}`}
+              className={`p-2 bg-white/90 backdrop-blur-md border border-black/5 ${item.is_favorite ? 'text-yellow-500' : 'text-neutral-400 hover:text-yellow-500'}`}
               title="Favorite"
             >
               <Star className={`w-4 h-4 ${item.is_favorite ? 'fill-current' : ''}`} />
@@ -52,20 +51,20 @@ const MovieCard: React.FC<MovieCardProps> = ({ item, onClick, isAdmin, onDelete,
 
       {/* Poster Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-transparent rounded-none">
-        <div className="w-full h-full overflow-hidden transition-transform duration-[650ms] ease-out group-hover:scale-[0.8]">
+        <div className="w-full h-full overflow-hidden">
           <img 
             src={item.poster} 
             alt={item.title}
-            className="w-full h-full object-cover transition-transform duration-[650ms] ease-out group-hover:scale-[1.25]"
+            className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100" />
         </div>
       </div>
 
       {/* Info */}
       <div className="flex flex-col items-start px-1">
-        <h3 className="text-[13px] font-semibold tracking-tight leading-tight text-black group-hover:text-neutral-600 transition-colors truncate w-full">
+        <h3 className="text-[13px] font-semibold tracking-tight leading-tight text-black group-hover:text-neutral-600 truncate w-full">
           {item.title}
         </h3>
         <span className="text-[11px] font-medium text-neutral-400">
