@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import MovieCard from './components/MovieCard';
@@ -10,21 +9,9 @@ import { INITIAL_DATA, GENRES } from './constants';
 import { MediaItem, Category } from './types';
 import { supabase } from './services/supabaseClient';
 import { Star, Loader2, Lock } from 'lucide-react';
+import { getSlug, isUUID } from './utils';
 
 const STORAGE_KEY = 'videoteka_v3_core';
-
-// Helper to check if a string is a valid UUID
-const isUUID = (str: string) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-};
-
-const getSlug = (title: string) => {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-};
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>(() => {
@@ -98,9 +85,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isInitialLoad) return;
-    const path = window.location.pathname.slice(1);
+    // Get clean path without leading/trailing slashes
+    const path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (path) {
-      const linked = items.find(i => getSlug(i.title) === path);
+      const linked = items.find(i => getSlug(i.title) === decodeURIComponent(path));
       if (linked) setSelectedItem(linked);
     }
   }, [isInitialLoad, items]);
@@ -122,15 +110,12 @@ const App: React.FC = () => {
 
     const newFavStatus = !item.is_favorite;
 
-    // 1. Optimistic Update (UI feels fast)
     setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
     
     if (selectedItem?.id === id) {
       setSelectedItem(prev => prev ? { ...prev, is_favorite: newFavStatus } : null);
     }
 
-    // 2. Cloud Sync logic
-    // We only attempt sync if it's a valid UUID (meaning it's in Supabase)
     if (isUsingDemoData || !isUUID(id)) {
       addToast(newFavStatus ? 'Added to local favorites' : 'Removed from local favorites', 'info');
       return;
@@ -138,7 +123,6 @@ const App: React.FC = () => {
 
     if (!isAdmin) {
       addToast('Admin login required to sync with cloud.', 'info');
-      // Revert if not admin but trying to sync
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
       if (selectedItem?.id === id) {
         setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
@@ -155,7 +139,6 @@ const App: React.FC = () => {
       if (error) throw error;
       addToast(newFavStatus ? 'Synced to cloud' : 'Removed from cloud');
     } catch (err: any) {
-      // Revert state on actual API failure
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
       if (selectedItem?.id === id) {
         setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
@@ -217,7 +200,6 @@ const App: React.FC = () => {
     const filtered = items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Fix for Sci-Fi including Science Fiction tags
       let matchesGenre = activeGenre === 'All';
       if (!matchesGenre) {
         if (activeGenre === 'Sci-Fi') {

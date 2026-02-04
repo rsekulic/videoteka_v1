@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { MediaItem } from '../types';
 import { X, Share2, Clock, List, Play, Check, RefreshCw, Loader2, Star } from 'lucide-react';
 import { fetchMovieDetails } from '../services/geminiService';
+import { getSlug } from '../utils';
 
 interface MovieModalProps {
   item: MediaItem | null;
@@ -11,13 +11,6 @@ interface MovieModalProps {
   onUpdate?: (item: MediaItem) => void;
   onToast?: (msg: any, type: 'success' | 'info' | 'error') => void;
 }
-
-const getSlug = (title: string) => {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-};
 
 const MovieModal: React.FC<MovieModalProps> = ({ item, onClose, isAdmin, onUpdate, onToast }) => {
   const [copied, setCopied] = useState(false);
