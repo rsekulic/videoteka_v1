@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearch, onOpenAddModal, isAdmin }) =>
           {isAdmin && (
             <button 
               onClick={onOpenAddModal}
-              className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[12px] font-bold hover:bg-neutral-800 shadow-lg"
+              className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[12px] font-bold hover:bg-neutral-800"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Content</span>

@@ -87,8 +87,13 @@ const App: React.FC = () => {
     if (isInitialLoad) return;
     const path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (path) {
-      const linked = items.find(i => getSlug(i.title) === decodeURIComponent(path));
-      if (linked) setSelectedItem(linked);
+      try {
+        const decodedPath = decodeURIComponent(path);
+        const linked = items.find(i => getSlug(i.title) === decodedPath);
+        if (linked) setSelectedItem(linked);
+      } catch (e) {
+        console.error("Path resolution failed:", e);
+      }
     }
   }, [isInitialLoad, items]);
 
@@ -106,14 +111,17 @@ const App: React.FC = () => {
     const item = items.find(i => i.id === id);
     if (!item) return;
     const newFavStatus = !item.is_favorite;
+    
     setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
     if (selectedItem?.id === id) {
       setSelectedItem(prev => prev ? { ...prev, is_favorite: newFavStatus } : null);
     }
+
     if (isUsingDemoData || !isUUID(id)) {
       addToast(newFavStatus ? 'Added to local favorites' : 'Removed from local favorites', 'info');
       return;
     }
+
     if (!isAdmin) {
       addToast('Admin login required to sync with cloud.', 'info');
       setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
@@ -122,6 +130,7 @@ const App: React.FC = () => {
       }
       return;
     }
+
     try {
       const { error } = await supabase
         .from('media_items')
@@ -213,6 +222,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f7f7f7] text-[#171717]">
       <Navbar onSearch={setSearchQuery} onOpenAddModal={() => setIsAddModalOpen(true)} isAdmin={isAdmin} />
+      
       <main className="max-w-[1440px] mx-auto px-3 py-16">
         <section className="mb-20 flex flex-col md:flex-row justify-between items-start gap-12">
           <div className="flex-1">
@@ -236,6 +246,7 @@ const App: React.FC = () => {
             </div>
           )}
         </section>
+
         <div className="flex flex-col gap-8 mb-16">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {(['All', 'Movies', 'TV Series', 'Favorites'] as Category[]).map(cat => (
@@ -257,6 +268,7 @@ const App: React.FC = () => {
             ))}
           </div>
         </div>
+
         {isInitialLoad ? (
           <div className="py-24 text-center">
             <Loader2 className="w-6 h-6 mx-auto mb-4 opacity-20" />
@@ -281,6 +293,7 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
       <MovieModal 
         item={selectedItem} 
         onClose={() => handleSelectItem(null)} 
@@ -290,9 +303,11 @@ const App: React.FC = () => {
       />
       {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddItem} />}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+
       <div className="fixed bottom-8 right-8 z-[200] flex flex-col gap-2">
         {toasts.map(toast => <Toast key={toast.id} message={toast} onClose={removeToast} />)}
       </div>
+
       <footer className="border-t border-black/5 mt-32 py-16 px-3 bg-white">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-black font-bold text-lg">Videoteka</div>

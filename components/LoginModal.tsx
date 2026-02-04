@@ -84,14 +84,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-black text-white py-4 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 group disabled:bg-neutral-400"
+              className="w-full bg-black text-white py-4 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 disabled:bg-neutral-400"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4" />
               ) : (
                 <>
                   Unlock Dashboard
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1" />
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>

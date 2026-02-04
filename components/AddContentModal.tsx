@@ -80,7 +80,7 @@ const AddContentModal: React.FC<AddContentModalProps> = ({ isOpen, onClose, onAd
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
-              className="w-full bg-black text-white py-4 font-bold text-sm flex items-center justify-center gap-2 hover:bg-neutral-800 disabled:bg-neutral-200 disabled:cursor-not-allowed"
+              className="w-full bg-black text-white py-4 font-bold text-sm flex items-center justify-center gap-2 hover:bg-neutral-800 disabled:bg-neutral-200"
             >
               {isLoading ? (
                 <>
