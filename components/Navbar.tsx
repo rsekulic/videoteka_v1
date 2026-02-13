@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Clapperboard, Plus, Shield } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 
 interface NavbarProps {
   onSearch: (query: string) => void;
@@ -9,44 +9,41 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onSearch, onOpenAddModal, isAdmin }) => {
   return (
-    <nav className="sticky top-0 z-50 w-full bg-[#f7f7f7]/80 border-b border-black/5 px-3 py-4 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 w-full bg-white border-b-4 border-black px-6 py-4">
       <div className="max-w-[1440px] mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-black flex items-center justify-center">
-              <Clapperboard className="text-white w-6 h-6" />
-            </div>
-            <span className="text-xl font-bold tracking-tight hidden sm:block text-black">Videoteka</span>
+        {/* Bauhaus Logo Block */}
+        <div className="flex items-center gap-0">
+          <div className="w-12 h-12 bg-[#E30613] flex items-center justify-center text-white font-black text-xl italic">
+            V
           </div>
-          
-          {isAdmin && (
-            <div className="hidden lg:flex items-center gap-2 bg-black/5 px-3 py-1">
-              <Shield className="w-3 h-3 text-black" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-black/60">Admin Mode</span>
-            </div>
-          )}
+          <div className="w-12 h-12 bg-black flex items-center justify-center text-white font-black text-xl">
+            T
+          </div>
         </div>
 
-        <div className="flex-1 max-w-md mx-6">
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/20 group-focus-within:text-black" />
+        {/* Asymmetric Search */}
+        <div className="flex-1 max-w-xl mx-12">
+          <div className="relative group border-2 border-black p-1 bg-white">
             <input
               type="text"
-              placeholder="Search directory..."
-              className="w-full bg-white/50 border border-black/5 rounded-none py-2 pl-10 pr-4 outline-none focus:border-black/10 focus:bg-white text-sm text-black"
+              placeholder="SEARCH_DIRECTORY"
+              className="w-full bg-transparent py-2 pl-4 pr-12 outline-none font-bold text-sm uppercase tracking-tighter placeholder:text-neutral-300"
               onChange={(e) => onSearch(e.target.value)}
             />
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-[#FFD700] border-l-2 border-black flex items-center justify-center">
+              <Search className="w-4 h-4 text-black" />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {isAdmin && (
             <button 
               onClick={onOpenAddModal}
-              className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[12px] font-bold hover:bg-neutral-800"
+              className="bg-[#005A9C] text-white px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-colors flex items-center gap-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Content</span>
+              <span className="hidden sm:inline">Add_Entry</span>
             </button>
           )}
         </div>

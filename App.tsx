@@ -8,10 +8,10 @@ import Toast, { ToastMessage } from './components/Toast';
 import { INITIAL_DATA, GENRES } from './constants';
 import { MediaItem, Category } from './types';
 import { supabase } from './services/supabaseClient';
-import { Star, Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import { getSlug, isUUID } from './utils';
 
-const STORAGE_KEY = 'videoteka_v3_core';
+const STORAGE_KEY = 'videoteka_bauhaus_v2';
 
 const App: React.FC = () => {
   const [items, setItems] = useState<MediaItem[]>(() => {
@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const [isUsingDemoData, setIsUsingDemoData] = useState(false);
 
   const addToast = useCallback((msg: any, type: 'success' | 'info' | 'error' = 'success') => {
-    let text = typeof msg === 'string' ? msg : msg?.message || 'Update failed';
+    let text = typeof msg === 'string' ? msg : msg?.message || 'Action failed';
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { id, text, type }]);
   }, []);
@@ -58,17 +58,12 @@ const App: React.FC = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const normalizedData = data.map(item => ({
-          ...item,
-          is_favorite: !!item.is_favorite
-        }));
-        setItems(normalizedData);
+        setItems(data.map(i => ({ ...i, is_favorite: !!i.is_favorite })));
         setIsUsingDemoData(false);
       } else {
         setIsUsingDemoData(true);
       }
     } catch (err: any) {
-      console.warn("Sync issue:", err);
       setIsUsingDemoData(true);
     } finally {
       setIsInitialLoad(false);
@@ -83,20 +78,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [fetchData]);
 
-  useEffect(() => {
-    if (isInitialLoad) return;
-    const path = window.location.pathname.replace(/^\/|\/$/g, '');
-    if (path) {
-      try {
-        const decodedPath = decodeURIComponent(path);
-        const linked = items.find(i => getSlug(i.title) === decodedPath);
-        if (linked) setSelectedItem(linked);
-      } catch (e) {
-        console.error("Path resolution failed:", e);
-      }
-    }
-  }, [isInitialLoad, items]);
-
   const handleSelectItem = useCallback((item: MediaItem | null) => {
     setSelectedItem(item);
     if (item) {
@@ -110,186 +91,116 @@ const App: React.FC = () => {
     e.stopPropagation();
     const item = items.find(i => i.id === id);
     if (!item) return;
-    const newFavStatus = !item.is_favorite;
+    const newStatus = !item.is_favorite;
     
-    setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: newFavStatus } : i));
-    if (selectedItem?.id === id) {
-      setSelectedItem(prev => prev ? { ...prev, is_favorite: newFavStatus } : null);
-    }
-
-    if (isUsingDemoData || !isUUID(id)) {
-      addToast(newFavStatus ? 'Added to local favorites' : 'Removed from local favorites', 'info');
-      return;
-    }
-
-    if (!isAdmin) {
-      addToast('Admin login required to sync with cloud.', 'info');
-      setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
-      if (selectedItem?.id === id) {
-        setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
-      }
-      return;
-    }
+    setItems(prev => prev.map(i => i.id === id ? { ...i, is_favorite: newStatus } : i));
+    if (!isAdmin || isUsingDemoData || !isUUID(id)) return;
 
     try {
-      const { error } = await supabase
-        .from('media_items')
-        .update({ is_favorite: newFavStatus })
-        .eq('id', id);
-      if (error) throw error;
-      addToast(newFavStatus ? 'Synced to cloud' : 'Removed from cloud');
-    } catch (err: any) {
-      setItems(prevItems => prevItems.map(i => i.id === id ? { ...i, is_favorite: !newFavStatus } : i));
-      if (selectedItem?.id === id) {
-        setSelectedItem(prev => prev ? { ...prev, is_favorite: !newFavStatus } : null);
-      }
-      addToast('Sync failed: ' + err.message, 'error');
-    }
-  };
-
-  const handleUpdateItem = async (updatedItem: MediaItem) => {
-    const { id, ...updates } = updatedItem;
-    setItems(prev => prev.map(i => i.id === id ? updatedItem : i));
-    setSelectedItem(updatedItem);
-    if (isUsingDemoData || !isUUID(id)) return;
-    try {
-      const { error } = await supabase.from('media_items').update(updates).eq('id', id);
-      if (error) throw error;
-      addToast('Metadata synced');
-    } catch (err: any) {
-      addToast(err.message, 'error');
-    }
-  };
-
-  const handleAddItem = async (newItem: MediaItem) => {
-    try {
-      const { id: _id, ...toInsert } = { ...newItem, is_favorite: false };
-      const { data, error } = await supabase.from('media_items').insert([toInsert]).select();
-      if (error) throw error;
-      if (data) {
-        setItems(prev => [data[0], ...prev]);
-        setIsUsingDemoData(false);
-        addToast(`${newItem.title} added to cloud`);
-      }
+      await supabase.from('media_items').update({ is_favorite: newStatus }).eq('id', id);
+      addToast(newStatus ? 'MOD_FAV_ENABLED' : 'MOD_FAV_DISABLED');
     } catch (err) {
-      const local = { ...newItem, id: Math.random().toString(36).substr(2, 9), is_favorite: false };
-      setItems(prev => [local, ...prev]);
-      addToast('Added locally (Cloud offline)', 'info');
-    }
-  };
-
-  const handleDeleteItem = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm('Delete this entry?')) return;
-    setItems(prev => prev.filter(i => i.id !== id));
-    if (isUsingDemoData || !isUUID(id)) return;
-    try {
-      const { error } = await supabase.from('media_items').delete().eq('id', id);
-      if (error) throw error;
-      addToast('Deleted from cloud');
-    } catch (err: any) {
-      addToast(err.message, 'error');
+      addToast('SYNC_ERROR', 'error');
     }
   };
 
   const filteredItems = useMemo(() => {
     const filtered = items.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      let matchesGenre = activeGenre === 'All';
-      if (!matchesGenre) {
-        if (activeGenre === 'Sci-Fi') {
-          matchesGenre = item.genre.includes('Sci-Fi') || item.genre.includes('Science Fiction');
-        } else {
-          matchesGenre = item.genre.includes(activeGenre);
-        }
-      }
+      const matchesGenre = activeGenre === 'All' || item.genre.some(g => g === activeGenre);
       let matchesCategory = true;
       if (activeCategory === 'Movies') matchesCategory = item.type === 'Movie';
       else if (activeCategory === 'TV Series') matchesCategory = item.type === 'TV Series';
       else if (activeCategory === 'Favorites') matchesCategory = !!item.is_favorite;
       return matchesSearch && matchesGenre && matchesCategory;
     });
+
+    // Favorites first, then date added (using ID/array index as proxy for demo data)
     return [...filtered].sort((a, b) => {
-      const favA = a.is_favorite ? 1 : 0;
-      const favB = b.is_favorite ? 1 : 0;
-      if (favA !== favB) return favB - favA;
-      return a.title.localeCompare(b.title);
+      if (a.is_favorite && !b.is_favorite) return -1;
+      if (!a.is_favorite && b.is_favorite) return 1;
+      
+      // Fallback: Date added (newer first)
+      // Since demo items have small IDs, larger ID = newer
+      return parseInt(b.id) - parseInt(a.id);
     });
   }, [items, activeCategory, activeGenre, searchQuery]);
 
-  const favoritesCount = useMemo(() => items.filter(i => !!i.is_favorite).length, [items]);
-
   return (
-    <div className="min-h-screen bg-[#f7f7f7] text-[#171717]">
+    <div className="min-h-screen pb-32">
       <Navbar onSearch={setSearchQuery} onOpenAddModal={() => setIsAddModalOpen(true)} isAdmin={isAdmin} />
       
-      <main className="max-w-[1440px] mx-auto px-3 py-16">
-        <section className="mb-20 flex flex-col md:flex-row justify-between items-start gap-12">
-          <div className="flex-1">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] mb-8">
-              A selection of things <br /> worth watching.
+      <main className="max-w-[1440px] mx-auto px-6 py-8 md:py-24">
+        {/* Asymmetric Bauhaus Header */}
+        <section className="mb-20 md:mb-32 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
+          <div className="md:col-span-8">
+            <h1 className="text-5xl md:text-[9rem] font-black uppercase tracking-tighter leading-[0.8] mb-6 md:mb-8">
+              things worth<br />
+              <span className="text-[#E30613]">watching.</span>
             </h1>
-            <p className="text-[14px] text-neutral-600 leading-relaxed max-w-md">
-              From under-the-radar finds to classic favorites, it's a simple, no-fuss list for anyone looking for something good to watch.
+            <div className="h-2 md:h-3 w-32 md:w-48 bg-[#005A9C] mb-6 md:mb-8" />
+            <p className="max-w-xl text-lg md:text-xl font-bold uppercase leading-tight tracking-tight">
+              a selection of cinema and episodic storytelling <br className="hidden md:block" />
+              curated for visual and narrative excellence.
             </p>
           </div>
-          {isAdmin && (
-            <div className="bg-white border border-black/5 p-6 shadow-sm min-w-[280px]">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Database Sync</span>
-              <div className="text-3xl font-bold tracking-tighter my-1">{items.length} Items</div>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-yellow-600 uppercase">
-                <Star className="w-3 h-3 fill-current" /> {favoritesCount} Favorites
-              </div>
-              <div className="mt-4 pt-4 border-t border-black/5">
-                 <button onClick={() => fetchData()} className="w-full bg-neutral-100 text-[10px] font-bold uppercase py-2 hover:bg-neutral-200">Force Refresh</button>
-              </div>
-            </div>
-          )}
+          <div className="md:col-span-4 flex flex-col justify-end">
+             <div className="border-l-4 md:border-l-8 border-black pl-6 md:pl-8 py-4">
+                <span className="mono text-[10px] md:text-sm font-black uppercase tracking-[0.3em] text-[#005A9C]">Archive_Index</span>
+                <div className="text-2xl md:text-4xl font-black mt-2">V.3_2024</div>
+             </div>
+          </div>
         </section>
 
-        <div className="flex flex-col gap-8 mb-16">
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Modular Navigation Tabs - Adjusted Spacing */}
+        <div className="flex flex-col gap-10 mb-20 md:mb-24 sticky top-20 md:top-24 z-40 bg-white/90 backdrop-blur-md py-6 border-y-2 border-black">
+          <div className="flex flex-wrap items-center gap-2">
             {(['All', 'Movies', 'TV Series', 'Favorites'] as Category[]).map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 text-[12px] font-bold flex items-center gap-2 ${activeCategory === cat ? 'bg-black text-white' : 'bg-white text-neutral-500 border border-black/5'}`}
+                className={`px-6 md:px-8 py-3 text-[10px] md:text-[11px] font-black uppercase tracking-widest border-2 border-black transition-all ${activeCategory === cat ? 'bg-black text-white' : 'bg-white text-black hover:bg-[#FFD700]'}`}
               >
-                {cat === 'Favorites' && <Star className={`w-3 h-3 ${activeCategory === 'Favorites' ? 'fill-white' : ''}`} />}
                 {cat}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-6 overflow-x-auto pb-4 border-b border-black/5">
+          <div className="flex items-center gap-8 md:gap-10 overflow-x-auto scrollbar-hide pb-2">
             {GENRES.map(genre => (
-              <button key={genre} onClick={() => setActiveGenre(genre)} className={`text-[12px] font-bold whitespace-nowrap ${activeGenre === genre ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
+              <button 
+                key={genre} 
+                onClick={() => setActiveGenre(genre)} 
+                className={`mono text-[10px] md:text-[11px] font-bold uppercase tracking-tighter whitespace-nowrap transition-colors ${activeGenre === genre ? 'text-[#E30613] border-b-2 border-[#E30613] pb-1' : 'text-neutral-300 hover:text-black'}`}
+              >
                 {genre}
               </button>
             ))}
           </div>
         </div>
 
+        {/* The Grid: Asymmetric & Dense */}
         {isInitialLoad ? (
-          <div className="py-24 text-center">
-            <Loader2 className="w-6 h-6 mx-auto mb-4 opacity-20" />
-            <p className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">Loading Directory...</p>
+          <div className="py-48 text-center">
+            <Loader2 className="w-12 h-12 mx-auto mb-6 animate-spin text-[#005A9C]" />
+            <p className="mono text-[11px] font-black uppercase tracking-widest">Compiling_Geometry...</p>
           </div>
         ) : filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-16 md:gap-12">
             {filteredItems.map(item => (
               <MovieCard 
                 key={item.id} 
                 item={item} 
                 onClick={handleSelectItem} 
                 isAdmin={isAdmin} 
-                onDelete={handleDeleteItem} 
+                onDelete={(id, e) => {}}
                 onToggleFavorite={handleToggleFavorite} 
               />
             ))}
           </div>
         ) : (
-          <div className="py-24 text-center border border-dashed border-black/10">
-            <p className="text-neutral-400 text-sm">No results found.</p>
+          <div className="py-32 md:py-48 flex flex-col items-center border-4 border-black bg-[#F9F9F9]">
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-[#E30613] mb-8 rotate-45" />
+            <p className="mono font-black uppercase tracking-[0.5em] text-lg md:text-2xl">Null_Result</p>
           </div>
         )}
       </main>
@@ -298,32 +209,47 @@ const App: React.FC = () => {
         item={selectedItem} 
         onClose={() => handleSelectItem(null)} 
         isAdmin={isAdmin} 
-        onUpdate={handleUpdateItem} 
-        onToast={addToast} 
+        onUpdate={(updated) => setItems(prev => prev.map(i => i.id === updated.id ? updated : i))}
+        onToast={addToast}
       />
-      {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddItem} />}
+      
+      {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={() => fetchData()} />}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
-      <div className="fixed bottom-8 right-8 z-[200] flex flex-col gap-2">
+      <div className="fixed bottom-12 right-12 z-[200] flex flex-col gap-4">
         {toasts.map(toast => <Toast key={toast.id} message={toast} onClose={removeToast} />)}
       </div>
 
-      <footer className="border-t border-black/5 mt-32 py-16 px-3 bg-white">
-        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="text-black font-bold text-lg">Videoteka</div>
-          <button 
-            onClick={() => isAdmin ? supabase.auth.signOut() : setIsLoginModalOpen(true)} 
-            className="text-[10px] font-bold uppercase tracking-widest opacity-50 hover:opacity-100"
-          >
-            {isAdmin ? 'Logout' : 'Admin Login'}
-          </button>
+      <footer className="mt-64 border-t-8 border-black bg-white pt-24 pb-48 px-6 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700] -mr-32 -mt-32 rounded-full opacity-10" />
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-24">
+          <div>
+             <h2 className="text-6xl md:text-8xl font-black uppercase italic leading-none mb-12">FORM<br />FOLLOWS<br />FUNCTION.</h2>
+             <span className="mono text-[10px] font-bold uppercase tracking-[0.8em] text-neutral-400">Videoteka // Archival Structure</span>
+          </div>
+          <div className="flex flex-col justify-between items-start md:items-end gap-12">
+             <div className="flex flex-col gap-6 md:items-end">
+                <button 
+                  onClick={() => isAdmin ? supabase.auth.signOut() : setIsLoginModalOpen(true)} 
+                  className="bg-black text-white px-12 py-6 text-[14px] font-black uppercase tracking-[0.4em] hover:bg-[#E30613] transition-colors border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                >
+                  {isAdmin ? 'TERMINATE_SYS' : 'AUTHORIZE_VAULT'}
+                </button>
+                {!isAdmin && (
+                  <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center gap-3 text-neutral-300 hover:text-black transition-colors px-2">
+                    <Lock className="w-4 h-4" />
+                    <span className="mono text-[10px] font-bold uppercase tracking-widest">Sys_Login</span>
+                  </button>
+                )}
+             </div>
+            <div className="flex gap-4">
+               <div className="w-8 h-8 bg-[#E30613]" />
+               <div className="w-8 h-8 bg-[#005A9C]" />
+               <div className="w-8 h-8 bg-[#FFD700]" />
+            </div>
+          </div>
         </div>
       </footer>
-      {!isAdmin && (
-        <button onClick={() => setIsLoginModalOpen(true)} className="fixed bottom-6 left-6 text-neutral-200 hover:text-black">
-          <Lock className="w-4 h-4" />
-        </button>
-      )}
     </div>
   );
 };

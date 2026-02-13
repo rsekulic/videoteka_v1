@@ -3,83 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Videoteka — A selection of things worth watching</title>
+    <title>Videoteka — Bauhaus Edition</title>
     <meta name="description" content="A simple, no-fuss list for anyone looking for something good to watch.">
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://videoteka.eu/">
-    <meta property="og:title" content="Videoteka | A selection of things worth watching">
-    <meta property="og:description" content="A simple, no-fuss list for anyone looking for something good to watch.">
-    <meta property="og:image" content="https://videoteka.eu/og-image.jpg">
-    <meta property="og:image:secure_url" content="https://videoteka.eu/og-image.jpg">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="1200">
-    <meta property="og:image:alt" content="Videoteka - Curated Movies and TV Series">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://videoteka.eu/">
-    <meta property="twitter:title" content="Videoteka | A selection of things worth watching">
-    <meta property="twitter:description" content="A simple, no-fuss list for anyone looking for something good to watch.">
-    <meta property="twitter:image" content="https://videoteka.eu/og-image.jpg">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --token-ced505ee-be70-4fe6-a98d-275943248dda: #f7f7f7;
-            --token-c7b717d5-a6ad-4ec1-bad4-5d528037a252: #d4d4d4;
-            --token-6137585a-4cb4-43b1-987d-abba747deb93: #e3e3e3;
-            --token-331442cb-acd2-453e-a322-b94eb073f51b: #d9d9d9;
-            --token-9740145d-c44f-473f-83c0-6cb89f382d81: #737373;
-            --token-099bca56-28da-4e72-9b46-526ffbc5f282: #a3a3a3;
-            --token-588b5f43-4c4e-4453-a18e-589576c11ac8: #d4d4d4;
-            --token-94d2c577-fd20-4b8a-9301-6f78a98375f0: #f5f5f5;
-            --token-a7ba6192-9476-4ae8-8646-3b1fa9ae8243: #ffffff;
-            --token-e5889e1f-cc64-4cf7-8a96-aaff1398b201: #f7f7f7;
-            --token-d4f337e7-7350-4d92-8866-0d8065e29da2: #171717;
-            --token-de1425f6-1e2b-4cbc-91c6-31deec1d324c: #f7f7f7;
-            --framer-will-change-override: none;
-            --framer-aspect-ratio-supported: auto;
+            --bauhaus-red: #E30613;
+            --bauhaus-blue: #005A9C;
+            --bauhaus-yellow: #FFD700;
+            --bauhaus-black: #000000;
+            --bauhaus-white: #FFFFFF;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--token-e5889e1f-cc64-4cf7-8a96-aaff1398b201);
-            color: var(--token-d4f337e7-7350-4d92-8866-0d8065e29da2);
-            font-size: 12px;
+            font-family: 'Archivo', sans-serif;
+            background-color: var(--bauhaus-white);
+            color: var(--bauhaus-black);
             -webkit-font-smoothing: antialiased;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
-        rt-img {
-            display: block;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        rt-img[src] {
-            content: url(attr(src));
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--token-e5889e1f-cc64-4cf7-8a96-aaff1398b201);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 10px;
+        .geometric-bg {
+            background-image: 
+                linear-gradient(90deg, #f7f7f7 1px, transparent 1px),
+                linear-gradient(#f7f7f7 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         * {
             box-sizing: border-box;
+            border-radius: 0 !important;
+        }
+
+        .bauhaus-transition {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
     </style>
 <script type="importmap">
@@ -97,9 +74,8 @@
 }
 </script>
 </head>
-<body>
+<body class="geometric-bg">
     <div id="root"></div>
-    <!-- Entry point for Vite/React -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>
