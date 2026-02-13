@@ -87,6 +87,58 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleAddItem = async (newItem: MediaItem) => {
+    try {
+      if (!isAdmin || isUsingDemoData) {
+        // Local only fallback
+        const itemWithId = { ...newItem, id: Math.random().toString(36).substr(2, 9) };
+        setItems(prev => [itemWithId, ...prev]);
+        addToast('ENTRY_CREATED_LOCAL');
+        return;
+      }
+
+      // If ID isn't a UUID, remove it so Supabase can generate one
+      const { id, ...dataToInsert } = newItem;
+      const finalData = isUUID(id) ? newItem : dataToInsert;
+
+      const { error } = await supabase
+        .from('media_items')
+        .insert([finalData]);
+
+      if (error) throw error;
+
+      addToast('ENTRY_INDEXED');
+      fetchData();
+    } catch (err: any) {
+      addToast(err.message || 'FAILED_TO_INDEX', 'error');
+    }
+  };
+
+  const handleDeleteItem = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Confirm deletion of this record?')) return;
+
+    try {
+      if (!isAdmin || isUsingDemoData || !isUUID(id)) {
+        setItems(prev => prev.filter(i => i.id !== id));
+        addToast('ENTRY_REMOVED_LOCAL');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('media_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      addToast('ENTRY_DELETED');
+      fetchData();
+    } catch (err: any) {
+      addToast(err.message || 'DELETE_FAILED', 'error');
+    }
+  };
+
   const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const item = items.find(i => i.id === id);
@@ -115,13 +167,11 @@ const App: React.FC = () => {
       return matchesSearch && matchesGenre && matchesCategory;
     });
 
-    // Favorites always first, then by date added (newer first)
+    // Favorites always first, maintaining the existing relative (chronological) order
     return [...filtered].sort((a, b) => {
       if (a.is_favorite && !b.is_favorite) return -1;
       if (!a.is_favorite && b.is_favorite) return 1;
-      
-      // Secondary sort: ID/Date proxy
-      return parseInt(b.id) - parseInt(a.id);
+      return 0; // Keep relative order from 'items' state (which is date-sorted from Supabase)
     });
   }, [items, activeCategory, activeGenre, searchQuery]);
 
@@ -191,7 +241,7 @@ const App: React.FC = () => {
                 item={item} 
                 onClick={handleSelectItem} 
                 isAdmin={isAdmin} 
-                onDelete={(id, e) => {}}
+                onDelete={handleDeleteItem}
                 onToggleFavorite={handleToggleFavorite} 
               />
             ))}
@@ -212,7 +262,7 @@ const App: React.FC = () => {
         onToast={addToast}
       />
       
-      {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={() => fetchData()} />}
+      {isAdmin && <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddItem} />}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
       <div className="fixed bottom-12 right-12 z-[200] flex flex-col gap-4">
@@ -223,7 +273,6 @@ const App: React.FC = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFD700] -mr-32 -mt-32 rounded-full opacity-10" />
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-24">
           <div>
-             <h2 className="text-6xl md:text-8xl font-black uppercase italic leading-none mb-12">FORM<br />FOLLOWS<br />FUNCTION.</h2>
              <span className="mono text-[10px] font-bold uppercase tracking-[0.8em] text-neutral-400">Videoteka // Archival Structure</span>
           </div>
           <div className="flex flex-col justify-between items-start md:items-end gap-12">
