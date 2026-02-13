@@ -8,7 +8,7 @@ import Toast, { ToastMessage } from './components/Toast';
 import { INITIAL_DATA, GENRES } from './constants';
 import { MediaItem, Category } from './types';
 import { supabase } from './services/supabaseClient';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, LogOut } from 'lucide-react';
 import { getSlug, isUUID } from './utils';
 
 const STORAGE_KEY = 'videoteka_bauhaus_v2';
@@ -115,13 +115,12 @@ const App: React.FC = () => {
       return matchesSearch && matchesGenre && matchesCategory;
     });
 
-    // Favorites first, then date added (using ID/array index as proxy for demo data)
+    // Favorites always first, then by date added (newer first)
     return [...filtered].sort((a, b) => {
       if (a.is_favorite && !b.is_favorite) return -1;
       if (!a.is_favorite && b.is_favorite) return 1;
       
-      // Fallback: Date added (newer first)
-      // Since demo items have small IDs, larger ID = newer
+      // Secondary sort: ID/Date proxy
       return parseInt(b.id) - parseInt(a.id);
     });
   }, [items, activeCategory, activeGenre, searchQuery]);
@@ -152,7 +151,7 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Modular Navigation Tabs - Adjusted Spacing */}
+        {/* Modular Navigation Tabs */}
         <div className="flex flex-col gap-10 mb-20 md:mb-24 sticky top-20 md:top-24 z-40 bg-white/90 backdrop-blur-md py-6 border-y-2 border-black">
           <div className="flex flex-wrap items-center gap-2">
             {(['All', 'Movies', 'TV Series', 'Favorites'] as Category[]).map(cat => (
@@ -228,17 +227,22 @@ const App: React.FC = () => {
              <span className="mono text-[10px] font-bold uppercase tracking-[0.8em] text-neutral-400">Videoteka // Archival Structure</span>
           </div>
           <div className="flex flex-col justify-between items-start md:items-end gap-12">
-             <div className="flex flex-col gap-6 md:items-end">
-                <button 
-                  onClick={() => isAdmin ? supabase.auth.signOut() : setIsLoginModalOpen(true)} 
-                  className="bg-black text-white px-12 py-6 text-[14px] font-black uppercase tracking-[0.4em] hover:bg-[#E30613] transition-colors border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
-                >
-                  {isAdmin ? 'TERMINATE_SYS' : 'AUTHORIZE_VAULT'}
-                </button>
-                {!isAdmin && (
-                  <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center gap-3 text-neutral-300 hover:text-black transition-colors px-2">
+             <div className="flex flex-col gap-4 md:items-end">
+                {!isAdmin ? (
+                  <button 
+                    onClick={() => setIsLoginModalOpen(true)} 
+                    className="flex items-center gap-3 text-neutral-400 hover:text-black transition-colors px-2 py-4"
+                  >
                     <Lock className="w-4 h-4" />
-                    <span className="mono text-[10px] font-bold uppercase tracking-widest">Sys_Login</span>
+                    <span className="mono text-[11px] font-black uppercase tracking-[0.4em]">Sys_Login</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => supabase.auth.signOut()} 
+                    className="flex items-center gap-3 text-[#E30613] hover:text-black transition-colors px-2 py-4"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="mono text-[11px] font-black uppercase tracking-[0.4em]">Terminate_Session</span>
                   </button>
                 )}
              </div>
